@@ -3035,10 +3035,8 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
   #topbar::before { animation: none !important; }
   .ddlist::before { animation: none !important; filter: none !important; }
 
-  /* ══ AN desktop UI, HIEN mobile UI ══ */
-  #topbar { display: none !important; }
-  #main   { display: none !important; }
-  #mb-app { display: flex !important; }
+  /* mb-nav mặc định ẩn, JS sẽ hiện khi cần */
+  /* KHÔNG ẩn #topbar/#main ở đây — JS (mbApplyMode) lo */
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3336,9 +3334,7 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
   border-top: 1px solid rgba(150,190,255,.3);
   box-shadow: 0 -2px 20px rgba(30,80,200,.08);
 }
-@media (orientation: portrait), (max-aspect-ratio: 1/1) {
-  #mb-nav { display: flex; }
-}
+/* mb-nav shown by JS */
 .mb-btn {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 3px;
@@ -4953,17 +4949,44 @@ _dsObs.observe(document.body, { childList: true, subtree: true });
 // ============================================================
 var _mbPanel = 'tables';
 
-function isMobile() { return window.innerWidth < window.innerHeight; }
+function isMobile() {
+  return window.innerWidth < window.innerHeight;
+}
 
-// Icon theo category (giong desktop)
+// Áp dụng trạng thái desktop/mobile — gọi mỗi khi resize
+function mbApplyMode() {
+  var app = document.getElementById('mb-app');
+  var nav = document.getElementById('mb-nav');
+  var main = document.getElementById('main');
+  var topbar = document.getElementById('topbar');
+  if (!app) return;
+
+  if (isMobile()) {
+    // Mobile: hiện mb-app, ẩn desktop
+    app.style.display = 'flex';
+    if (nav)    nav.style.display    = 'flex';
+    if (main)   main.style.display   = 'none';
+    if (topbar) topbar.style.display = 'none';
+    mbGoTo(_mbPanel);
+  } else {
+    // Desktop: ẩn mb-app, hiện desktop
+    app.style.display = 'none';
+    if (nav)    nav.style.display    = 'none';
+    if (main)   main.style.display   = '';   // CSS tự lo
+    if (topbar) topbar.style.display = '';
+  }
+}
+
+// Icon theo category
 function mbCatIcon(cat) {
   if (!cat) return '🍽️';
-  var c = cat.toLowerCase();
-  if (c.includes('cà phê') || c.includes('ca phe') || c.includes('coffee')) return '☕';
-  if (c.includes('trà') || c.includes('tra') || c.includes('tea')) return '🍵';
-  if (c.includes('nước') || c.includes('nuoc') || c.includes('juice')) return '🥤';
-  if (c.includes('bia') || c.includes('beer') || c.includes('rượu')) return '🍺';
-  if (c.includes('sinh tố') || c.includes('sinh to') || c.includes('smoothie')) return '🥭';
+  var cl = cat.toLowerCase();
+  if (cl.includes('cà phê') || cl.includes('coffee')) return '☕';
+  if (cl.includes('trà') || cl.includes('tea'))       return '🍵';
+  if (cl.includes('nước') || cl.includes('juice'))    return '🥤';
+  if (cl.includes('bia')  || cl.includes('rượu'))     return '🍺';
+  if (cl.includes('sinh tố') || cl.includes('smoothie')) return '🥭';
+  if (cl.includes('sữa') || cl.includes('cacao'))     return '🧋';
   return '🍽️';
 }
 
@@ -4984,7 +5007,7 @@ function mbRenderTables() {
     div.innerHTML =
       '<div class="mb-tcard-dot"></div>' +
       '<div class="mb-tcard-name">' + t + '</div>' +
-      '<div class="mb-tcard-status">' + (busy ? 'Có khách' : 'Trống') + '</div>' +
+      '<div class="mb-tcard-status">' + (busy?'Có khách':'Trống') + '</div>' +
       (busy && tot > 0 ? '<div class="mb-tcard-total">'+fmt(tot)+'</div>' : '');
     div.onclick = function() {
       selTable(t);
@@ -4998,7 +5021,6 @@ function mbRenderTables() {
 function mbRenderMenu() {
   var chip = document.getElementById('mb-table-chip');
   if (chip) chip.innerHTML = S.curTable ? '📍 ' + S.curTable : '📍 Chưa chọn bàn';
-
   var catbar = document.getElementById('mb-catbar');
   if (!catbar) return;
   if (!S.curCat) S.curCat = 'Tất cả';
@@ -5030,21 +5052,21 @@ function mbRenderMenuItems() {
   });
   el.innerHTML = '';
   if (!list.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(30,64,175,.3);font-size:14px;font-weight:600">Không có món</div>';
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(30,64,175,.35);font-size:14px;font-weight:600">Không có món</div>';
     return;
   }
   list.forEach(function(item) {
-    var oos = item.stock !== null && item.stock !== undefined && item.stock <= 0;
+    var oos  = item.stock !== null && item.stock !== undefined && item.stock <= 0;
     var icon = mbCatIcon(item.category);
-    var div = document.createElement('div');
-    div.className = 'mb-mitem' + (oos ? ' mb-oos' : '');
+    var div  = document.createElement('div');
+    div.className = 'mb-mitem' + (oos?' mb-oos':'');
     div.innerHTML =
       '<div class="mb-mitem-icon">' + icon + '</div>' +
       '<div class="mb-mitem-info">' +
         '<div class="mb-mitem-name">' + item.name + '</div>' +
         '<div class="mb-mitem-price">' + fmt(item.price) + '</div>' +
       '</div>' +
-      '<button class="mb-mitem-add"' + (oos?' disabled style="opacity:.35"':'') + '>+</button>';
+      '<button class="mb-mitem-add"' + (oos?' disabled style="opacity:.3"':'') + '>+</button>';
     if (!oos) {
       div.querySelector('.mb-mitem-add').onclick = function(e) {
         e.stopPropagation();
@@ -5059,11 +5081,9 @@ function mbRenderMenuItems() {
 // ── Render bill ──
 function mbRenderBill() {
   var table = S.curTable;
-
   var tbl = document.getElementById('mb-bill-table');
   if (tbl) tbl.textContent = table ? 'Đơn hàng: ' + table.toUpperCase() : 'Chưa chọn bàn';
 
-  // Tabs
   var tabsEl = document.getElementById('mb-bill-tabs');
   if (tabsEl) {
     tabsEl.innerHTML = '';
@@ -5094,20 +5114,16 @@ function mbRenderBillItems() {
   var empty = document.getElementById('mb-bill-empty');
   var totEl = document.getElementById('mb-total-val');
   if (!body) return;
-
   var table = S.curTable;
   var tab   = table && S.activeTab[table];
   var items = (tab && S.store[table] && S.store[table][tab]) || [];
-
   body.querySelectorAll('.mb-bitem').forEach(function(e){ e.remove(); });
-
   if (!items.length) {
     if (empty) empty.style.display = '';
     if (totEl) totEl.textContent = '0đ';
     return;
   }
   if (empty) empty.style.display = 'none';
-
   var total = 0;
   items.forEach(function(item) {
     var qty = item.quantity || 1;
@@ -5122,12 +5138,8 @@ function mbRenderBillItems() {
         '<button class="mb-qty-btn mb-q-plus"  data-name="'+item.name+'">+</button>' +
       '</div>' +
       '<div class="mb-bitem-price">'+fmt(item.price*qty)+'</div>';
-    div.querySelector('.mb-q-minus').onclick = function(){
-      remItem(item.name);
-    };
-    div.querySelector('.mb-q-plus').onclick = function(){
-      addItem(item.name);
-    };
+    div.querySelector('.mb-q-minus').onclick = function(){ remItem(item.name); };
+    div.querySelector('.mb-q-plus' ).onclick = function(){ addItem(item.name); };
     body.insertBefore(div, empty);
   });
   if (totEl) totEl.textContent = fmt(total);
@@ -5150,13 +5162,10 @@ function mbGoTo(panel) {
   document.querySelectorAll('.mb-btn').forEach(function(b){
     b.classList.toggle('active', b.id === 'mbn-'+panel);
   });
-  document.querySelectorAll('.mb-page').forEach(function(p){
-    p.classList.remove('active');
-  });
+  document.querySelectorAll('.mb-page').forEach(function(p){ p.classList.remove('active'); });
   var pageMap = {tables:'mb-p-tables', menu:'mb-p-menu', bill:'mb-p-bill'};
   var pg = document.getElementById(pageMap[panel]);
   if (pg) pg.classList.add('active');
-
   if (panel === 'tables') mbRenderTables();
   if (panel === 'menu')   mbRenderMenu();
   if (panel === 'bill')   mbRenderBill();
@@ -5173,7 +5182,7 @@ document.addEventListener('click', function(e){
   }
 });
 
-// ── Patch các hàm gốc để đồng bộ mobile ──
+// ── Patch các hàm gốc ──
 var _origRBill = rBill;
 rBill = function() {
   _origRBill.apply(this, arguments);
@@ -5192,18 +5201,20 @@ rMenu = function() {
   if (isMobile()) mbRenderMenuItems();
 };
 
+// Patch showView — KHÔNG dùng inline style, chỉ gọi mbApplyMode
 var _origShowView = showView;
 showView = function(v) {
   _origShowView(v);
   if (!isMobile()) return;
-  var nav = document.getElementById('mb-nav');
+  // Khi vào lịch sử: ẩn mobile app
   var app = document.getElementById('mb-app');
+  var nav = document.getElementById('mb-nav');
   if (v === 'hist') {
-    if (nav) nav.style.display = 'none';
     if (app) app.style.display = 'none';
+    if (nav) nav.style.display = 'none';
   } else {
-    if (nav) nav.style.display = 'flex';
     if (app) app.style.display = 'flex';
+    if (nav) nav.style.display = 'flex';
     mbGoTo(_mbPanel);
   }
 };
@@ -5233,14 +5244,15 @@ showView = function(v) {
   },{passive:true});
 })();
 
+// ── Resize: luôn gọi mbApplyMode ──
 window.addEventListener('resize', function(){
-  if(isMobile()) mbGoTo(_mbPanel);
+  mbApplyMode();
 });
 
 // ── Khởi động ──
 setTimeout(function(){
-  if(isMobile()) mbGoTo('tables');
-}, 200);
+  mbApplyMode();
+}, 100);
 
 """
 
