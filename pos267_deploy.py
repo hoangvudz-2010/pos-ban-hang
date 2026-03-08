@@ -141,7 +141,10 @@ def load_users():
     return {}
 
 def save_users(u):
-    if _use_drive(): drive_write(DRIVE_USERS_FILE, u)
+    if _use_drive():
+        ok = drive_write(DRIVE_USERS_FILE, u)
+        if not ok:
+            raise RuntimeError("Luu Drive that bai")
     else:
         with open("users.json","w",encoding="utf-8") as f: json.dump(u,f,ensure_ascii=False,indent=2)
 
@@ -4966,12 +4969,39 @@ def api_register():
     if not u or not p1: return jsonify({"error":"Vui lòng nhập đầy đủ!"}),400
     if p1!=p2: return jsonify({"error":"Mật khẩu xác nhận không khớp!"}),400
     if u in users: return jsonify({"error":"Tên đăng nhập đã tồn tại!"}),400
-    users[u]={"password":hash_pw(p1)}; save_users(users)
+    users[u]={"password":hash_pw(p1)}
+    try:
+        save_users(users)
+    except RuntimeError as e:
+        return jsonify({"error":f"Lỗi lưu dữ liệu: {e}. Kiểm tra cấu hình Google Drive trên Render."}),500
     return jsonify({"ok":True})
 
 @flask_app.route("/api/logout",methods=["POST"])
 def api_logout():
     session.clear(); return jsonify({"ok":True})
+
+@flask_app.route("/api/health")
+def api_health():
+    """Endpoint kiem tra trang thai Drive - dung de debug"""
+    status = {
+        "drive_configured": _use_drive(),
+        "gdrive_credentials_set": bool(GDRIVE_CREDENTIALS),
+        "gdrive_folder_id_set": bool(GDRIVE_FOLDER_ID),
+    }
+    if _use_drive():
+        try:
+            svc = get_drive()
+            status["drive_connected"] = svc is not None
+            if svc:
+                # Thu doc danh sach file trong folder
+                q = f"'{GDRIVE_FOLDER_ID}' in parents and trashed=false"
+                res = svc.files().list(q=q, fields="files(name)").execute()
+                files = [f["name"] for f in res.get("files", [])]
+                status["drive_files"] = files
+                status["users_file_exists"] = "users.json" in files
+        except Exception as e:
+            status["drive_error"] = str(e)
+    return jsonify(status)
 
 @flask_app.route("/api/data")
 @login_required
