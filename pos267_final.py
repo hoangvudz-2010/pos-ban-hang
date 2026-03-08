@@ -1023,12 +1023,14 @@ input, select, textarea { font-family: inherit; font-stretch: inherit }
   100% { background-position: 100% 100%, 0% 100% }
 }
 
+#mc { position: fixed; inset: 0; z-index: 99999; pointer-events: none; }
+#mc:not(:empty) { pointer-events: auto; }
 .mbg {
   position: fixed; inset: 0;
   background: rgba(200,215,245,.04);
   backdrop-filter: blur(8px) saturate(130%) brightness(1.01);
   -webkit-backdrop-filter: blur(8px) saturate(130%) brightness(1.01);
-  z-index: 1000; display: flex; align-items: center; justify-content: center;
+  z-index: 99999; display: flex; align-items: center; justify-content: center;
   animation: bgFade .22s ease;
 }
 /* Water caustic light on overlay */
@@ -1892,7 +1894,7 @@ input, select, textarea { font-family: inherit; font-stretch: inherit }
 .chip button:hover { opacity:1; color:var(--d); transform:rotate(90deg) scale(1.3) }
 
 /* Toast */
-#ts { position:fixed; top:14px; right:14px; z-index:9998; display:flex; flex-direction:column; gap:8px; pointer-events:none }
+#ts { position:fixed; top:14px; right:14px; z-index:100000; display:flex; flex-direction:column; gap:8px; pointer-events:none }
 .tk {
   padding:13px 20px; border-radius:var(--r-sm); font-weight:600; font-size:13px;
   animation:toastSlide .32s var(--spring);
@@ -2311,7 +2313,7 @@ input, select, textarea { font-family: inherit; font-stretch: inherit }
 # The loader CSS was moved above; add it back as an extra block
 CSS_LOADER = r"""
 /* Loader */
-#ldr { position:fixed; top:0; left:0; right:0; height:2.5px; z-index:9999; display:none; background:transparent }
+#ldr { position:fixed; top:0; left:0; right:0; height:2.5px; z-index:100001; display:none; background:transparent }
 #ldr.on { display:block }
 #ldrb {
   height:100%; width:40%;
@@ -3064,58 +3066,44 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 }
 
 /* ══════════════════════════════════════════════════════════
-   MOBILE APP UI — Liquid Glass (iOS 26 style)
+   MOBILE APP UI — Liquid Glass iOS style
+   Blur CHI o header/footer/nav, KHONG o list items
    ══════════════════════════════════════════════════════════ */
 
-/* Nền gradient mesh */
 #mb-app {
   display: none;
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  /* Nền gradient mesh để kính có gì phản chiếu */
   background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(147,197,253,.55) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 85% 25%, rgba(196,181,253,.45) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 70% at 50% 85%, rgba(110,231,183,.35) 0%, transparent 55%),
-    linear-gradient(160deg, #e0eeff 0%, #f0e8ff 40%, #e8f8f0 100%);
+    radial-gradient(ellipse 90% 50% at 15% 5%,  rgba(147,197,253,.6) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 60% at 90% 20%, rgba(196,181,253,.5) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 50% at 50% 95%, rgba(110,231,183,.4) 0%, transparent 50%),
+    linear-gradient(160deg, #dbeafe 0%, #ede9fe 50%, #d1fae5 100%);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
 }
 
-/* Glass mixin — dùng lại cho tất cả element */
-.mb-glass {
-  background: rgba(255,255,255,.28);
-  backdrop-filter: blur(28px) saturate(180%) brightness(1.08);
-  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.08);
-  border: 1px solid rgba(255,255,255,.65);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.85),
-    inset 0 -1px 0 rgba(255,255,255,.2),
-    0 4px 24px rgba(80,100,200,.1);
-}
-
-/* ── Header ── */
+/* ── Header — blur mạnh, chỉ 1 tầng ── */
 #mb-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px 12px;
-  background: rgba(255,255,255,.35);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border-bottom: 1px solid rgba(255,255,255,.55);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 0 rgba(180,200,255,.15);
-  flex-shrink: 0; position: relative; z-index: 10;
+  padding: 14px 16px 12px; flex-shrink: 0; position: relative; z-index: 10;
+  background: rgba(255,255,255,.45);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,.7);
+  box-shadow: 0 1px 0 rgba(200,215,255,.3), inset 0 1px 0 rgba(255,255,255,.9);
 }
 #mb-brand {
-  font-size: 17px; font-weight: 800; letter-spacing: -0.4px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #4f46e5 100%);
+  font-size: 17px; font-weight: 800; letter-spacing: -.4px;
+  background: linear-gradient(135deg,#1e3a8a,#4f46e5);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 #mb-user-btn {
   width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(255,255,255,.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,.7);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 2px 8px rgba(100,120,255,.15);
+  background: rgba(255,255,255,.5);
+  border: 1px solid rgba(255,255,255,.8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 2px 6px rgba(100,120,200,.12);
   display: flex; align-items: center; justify-content: center;
   font-size: 15px; cursor: pointer; color: #1e3a8a;
 }
@@ -3123,33 +3111,27 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 /* Popup menu */
 #mb-menu-popup {
   position: fixed; top: 64px; right: 12px;
-  background: rgba(250,253,255,.85);
-  backdrop-filter: blur(48px) saturate(200%) brightness(1.1);
-  -webkit-backdrop-filter: blur(48px) saturate(200%) brightness(1.1);
-  border: 1px solid rgba(255,255,255,.75);
+  background: rgba(245,250,255,.92);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255,255,255,.8);
   border-radius: 18px;
-  box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.95),
-    0 12px 48px rgba(60,80,200,.18),
-    0 2px 8px rgba(60,80,200,.1);
+  box-shadow: 0 12px 40px rgba(60,80,180,.2), inset 0 1px 0 rgba(255,255,255,.9);
   min-width: 215px; padding: 8px; z-index: 9000; display: none;
 }
-#mb-menu-popup.open { display: block; animation: mbPopIn .2s cubic-bezier(.34,1.56,.64,1); }
+#mb-menu-popup.open { display: block; animation: mbPopIn .18s cubic-bezier(.34,1.56,.64,1); }
 @keyframes mbPopIn {
-  from { opacity:0; transform: scale(.92) translateY(-8px); }
-  to   { opacity:1; transform: scale(1) translateY(0); }
+  from { opacity:0; transform:scale(.9) translateY(-6px); }
+  to   { opacity:1; transform:scale(1)  translateY(0); }
 }
 .mb-menu-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; border: none;
-  background: transparent; width: 100%; text-align: left;
-  border-radius: 11px; font-size: 14px; font-weight: 600;
-  color: #1e3a8a; cursor: pointer; transition: background .12s;
+  padding: 12px 14px; border: none; background: transparent;
+  width: 100%; text-align: left; border-radius: 11px;
+  font-size: 14px; font-weight: 600; color: #1e3a8a; cursor: pointer;
 }
-.mb-menu-item:active {
-  background: rgba(99,102,241,.12);
-}
-.mb-menu-sep { height: 1px; background: rgba(100,120,255,.12); margin: 4px 2px; }
+.mb-menu-item:active { background: rgba(99,102,241,.1); }
+.mb-menu-sep { height: 1px; background: rgba(100,120,255,.1); margin: 4px 2px; }
 
 /* ── Pages ── */
 #mb-pages { flex: 1; overflow: hidden; position: relative; }
@@ -3161,10 +3143,9 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 
 /* ══ CHỌN BÀN ══ */
 .mb-pg-title {
-  padding: 10px 16px 6px;
+  padding: 10px 16px 6px; flex-shrink: 0;
   font-size: 10px; font-weight: 700; letter-spacing: 1.8px;
-  text-transform: uppercase; color: rgba(30,58,138,.5);
-  flex-shrink: 0;
+  text-transform: uppercase; color: rgba(30,58,138,.45);
 }
 #mb-tgrid {
   flex: 1; overflow-y: auto;
@@ -3173,138 +3154,109 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 }
 #mb-tgrid::-webkit-scrollbar { display: none; }
 
+/* Card bàn: glass tĩnh, KHÔNG backdrop-filter */
 .mb-tcard {
-  height: 90px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.32);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,.68);
+  height: 88px; border-radius: 18px;
+  background: rgba(255,255,255,.52);
+  border: 1px solid rgba(255,255,255,.8);
   box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.9),
-    inset 0 -1px 0 rgba(180,200,255,.2),
-    0 3px 16px rgba(80,100,200,.09);
+    inset 0 1.5px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(200,215,255,.2),
+    0 3px 14px rgba(80,100,200,.1);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 3px; cursor: pointer;
-  transition: transform .14s, box-shadow .14s;
-  position: relative; overflow: hidden;
+  transition: transform .13s; position: relative; overflow: hidden;
 }
-/* Highlight cầu vồng trên viền */
+/* Highlight sáng trên viền */
 .mb-tcard::before {
   content: '';
   position: absolute; top: 0; left: 10%; right: 10%; height: 1.5px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9) 40%, rgba(200,220,255,.7) 70%, transparent);
-  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.95) 50%, transparent);
 }
-.mb-tcard:active { transform: scale(.92); }
+.mb-tcard:active { transform: scale(.91); }
 .mb-tcard.busy {
-  background: rgba(255,237,213,.45);
-  border-color: rgba(251,191,36,.4);
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.85), 0 3px 14px rgba(249,115,22,.12);
+  background: rgba(255,237,213,.6);
+  border-color: rgba(253,186,116,.5);
 }
 .mb-tcard.sel {
-  background: rgba(219,234,254,.5);
-  border-color: rgba(147,197,253,.65);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.95),
-    0 0 0 2px rgba(59,130,246,.2),
-    0 4px 18px rgba(59,130,246,.2);
+  background: rgba(219,234,254,.65);
+  border-color: rgba(147,197,253,.7);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.95), 0 0 0 2.5px rgba(59,130,246,.22), 0 4px 16px rgba(59,130,246,.18);
 }
-.mb-tcard-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(180,195,230,.6);
-}
-.mb-tcard.busy .mb-tcard-dot { background: #f97316; box-shadow: 0 0 6px rgba(249,115,22,.5); }
-.mb-tcard.sel  .mb-tcard-dot { background: #3b82f6; box-shadow: 0 0 6px rgba(59,130,246,.5); }
+.mb-tcard-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(180,195,230,.5); }
+.mb-tcard.busy .mb-tcard-dot { background: #f97316; }
+.mb-tcard.sel  .mb-tcard-dot { background: #3b82f6; }
 .mb-tcard-name {
   font-size: 12px; font-weight: 800; color: #1e3a8a;
   max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.mb-tcard-status {
-  font-size: 8px; font-weight: 700; letter-spacing: .5px;
-  text-transform: uppercase; color: rgba(30,58,138,.4);
-}
+.mb-tcard-status { font-size: 8px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: rgba(30,58,138,.38); }
 .mb-tcard.busy .mb-tcard-status { color: #ea580c; }
 .mb-tcard-total { font-size: 10px; font-weight: 700; color: #ea580c; }
 
 /* ══ THỰC ĐƠN ══ */
 #mb-menu-header {
   padding: 10px 14px 8px; flex-shrink: 0;
-  background: rgba(255,255,255,.3);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border-bottom: 1px solid rgba(255,255,255,.5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.85);
+  background: rgba(255,255,255,.42);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,.65);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
 }
 #mb-table-chip {
   display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(219,234,254,.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(147,197,253,.5);
-  border-radius: 99px; padding: 5px 13px;
+  background: rgba(219,234,254,.7);
+  border: 1px solid rgba(147,197,253,.55);
+  border-radius: 99px; padding: 5px 13px; margin-bottom: 8px;
   font-size: 12px; font-weight: 700; color: #1d4ed8;
-  margin-bottom: 8px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 }
-#mb-catbar {
-  display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px;
-  -webkit-overflow-scrolling: touch;
-}
+#mb-catbar { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
 #mb-catbar::-webkit-scrollbar { display: none; }
+/* Category pill: glass tĩnh */
 .mb-cat {
   flex-shrink: 0; padding: 6px 14px; border-radius: 99px;
-  background: rgba(255,255,255,.38);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,.65);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-  font-size: 12px; font-weight: 700; color: rgba(30,58,138,.65);
-  cursor: pointer; white-space: nowrap; transition: all .14s;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.75);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 1px 4px rgba(80,100,200,.07);
+  font-size: 12px; font-weight: 700; color: rgba(30,58,138,.6);
+  cursor: pointer; white-space: nowrap; transition: all .13s;
 }
 .mb-cat.on {
-  background: rgba(37,99,235,.8);
-  backdrop-filter: blur(16px) brightness(1.1);
-  border-color: rgba(96,165,250,.5);
+  background: rgba(37,99,235,.85);
+  border-color: rgba(96,165,250,.4);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 3px 12px rgba(37,99,235,.3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 3px 10px rgba(37,99,235,.25);
 }
-#mb-mitems {
-  flex: 1; overflow-y: auto; padding: 8px 12px 82px;
-}
+#mb-mitems { flex: 1; overflow-y: auto; padding: 8px 12px 82px; }
 #mb-mitems::-webkit-scrollbar { display: none; }
+
+/* Món: glass tĩnh, KHÔNG backdrop-filter */
 .mb-mitem {
   display: flex; align-items: center; gap: 12px;
   padding: 11px 13px; margin-bottom: 7px;
-  background: rgba(255,255,255,.38);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,.7);
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.8);
   border-radius: 15px;
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.9), 0 2px 10px rgba(80,100,200,.07);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 6px rgba(80,100,200,.07);
   position: relative; overflow: hidden;
 }
 .mb-mitem::before {
-  content: '';
-  position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+  content: ''; position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
 }
-.mb-mitem.mb-oos { opacity: .4; }
+.mb-mitem.mb-oos { opacity: .38; }
 .mb-mitem-icon { font-size: 26px; line-height: 1; flex-shrink: 0; }
 .mb-mitem-info { flex: 1; min-width: 0; }
-.mb-mitem-name {
-  font-size: 14px; font-weight: 700; color: #1e3a8a;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.mb-mitem-name { font-size: 14px; font-weight: 700; color: #1e3a8a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mb-mitem-price { font-size: 12px; font-weight: 600; color: #2563eb; margin-top: 2px; }
 .mb-mitem-add {
   width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(37,99,235,.75);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(147,197,253,.5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 3px 10px rgba(37,99,235,.28);
-  color: #fff; font-size: 20px; font-weight: 300;
+  background: rgba(37,99,235,.88);
+  border: 1px solid rgba(147,197,253,.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 3px 8px rgba(37,99,235,.28);
+  color: #fff; font-size: 20px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0; transition: transform .1s;
 }
@@ -3313,111 +3265,90 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 /* ══ ĐƠN HÀNG ══ */
 #mb-bill-header {
   padding: 10px 16px 8px; flex-shrink: 0;
-  background: rgba(255,255,255,.3);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border-bottom: 1px solid rgba(255,255,255,.5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.85);
+  background: rgba(255,255,255,.42);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,.65);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
 }
 #mb-bill-table { font-size: 15px; font-weight: 800; color: #1e3a8a; margin-bottom: 6px; }
 #mb-bill-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
 #mb-bill-tabs::-webkit-scrollbar { display: none; }
 .mb-otab {
   flex-shrink: 0; padding: 5px 14px; border-radius: 99px;
-  background: rgba(255,255,255,.38);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,.65);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.75);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85);
   font-size: 12px; font-weight: 700; color: rgba(30,58,138,.6);
-  cursor: pointer; white-space: nowrap; transition: all .14s;
+  cursor: pointer; white-space: nowrap; transition: all .13s;
 }
 .mb-otab.on {
-  background: rgba(37,99,235,.78);
-  border-color: rgba(96,165,250,.4);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 3px 10px rgba(37,99,235,.28);
+  background: rgba(37,99,235,.85); border-color: rgba(96,165,250,.4); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 3px 8px rgba(37,99,235,.25);
 }
-#mb-billbody {
-  flex: 1; overflow-y: auto; padding: 8px 12px 6px;
-}
+#mb-billbody { flex: 1; overflow-y: auto; padding: 8px 12px 6px; }
 #mb-billbody::-webkit-scrollbar { display: none; }
 #mb-bill-empty {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  height: 100%; gap: 10px; color: rgba(30,58,138,.3);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; gap: 10px; color: rgba(30,58,138,.28);
 }
-#mb-bill-empty .ico { font-size: 52px; opacity: .6; }
+#mb-bill-empty .ico { font-size: 52px; }
 #mb-bill-empty p { font-size: 13px; font-weight: 600; }
+
+/* Bill item: glass tĩnh */
 .mb-bitem {
   display: flex; align-items: center; gap: 10px;
   padding: 11px 13px; margin-bottom: 7px;
-  background: rgba(255,255,255,.38);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,.7);
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.8);
   border-radius: 14px;
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.9), 0 2px 8px rgba(80,100,200,.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 5px rgba(80,100,200,.07);
   position: relative; overflow: hidden;
 }
 .mb-bitem::before {
-  content: '';
-  position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+  content: ''; position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
 }
 .mb-bitem-name { flex: 1; font-size: 13px; font-weight: 700; color: #1e3a8a; }
 .mb-bitem-qty { display: flex; align-items: center; gap: 8px; }
 .mb-qty-btn {
   width: 28px; height: 28px; border-radius: 50%;
-  background: rgba(255,255,255,.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255,255,255,.65);
   border: 1px solid rgba(147,197,253,.5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 4px rgba(80,100,200,.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 3px rgba(80,100,200,.1);
   font-size: 16px; display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: #1d4ed8; font-weight: 800; transition: transform .1s;
 }
-.mb-qty-btn:active { transform: scale(.82); background: rgba(219,234,254,.7); }
+.mb-qty-btn:active { transform: scale(.82); }
 .mb-bitem-n { font-size: 15px; font-weight: 800; color: #1e3a8a; min-width: 20px; text-align: center; }
 .mb-bitem-price { font-size: 12px; font-weight: 700; color: #2563eb; min-width: 68px; text-align: right; }
 
 /* Footer */
 #mb-bill-footer {
-  padding: 12px 14px; flex-shrink: 0;
-  background: rgba(255,255,255,.35);
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border-top: 1px solid rgba(255,255,255,.6);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 -2px 20px rgba(80,100,200,.06);
-  padding-bottom: 74px;
+  padding: 12px 14px; flex-shrink: 0; padding-bottom: 74px;
+  background: rgba(255,255,255,.5);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,.7);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
 }
-#mb-total {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
-}
-#mb-total-label { font-size: 13px; font-weight: 700; color: rgba(30,58,138,.55); }
+#mb-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+#mb-total-label { font-size: 13px; font-weight: 700; color: rgba(30,58,138,.5); }
 #mb-total-val {
   font-size: 22px; font-weight: 800;
-  background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+  background: linear-gradient(135deg,#1d4ed8,#4f46e5);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 #mb-checkout-btn {
   width: 100%; padding: 15px;
-  background: rgba(37,99,235,.82);
-  backdrop-filter: blur(16px) brightness(1.1);
-  -webkit-backdrop-filter: blur(16px) brightness(1.1);
-  border: 1px solid rgba(147,197,253,.5);
+  background: rgba(37,99,235,.88);
+  border: 1px solid rgba(147,197,253,.4);
   border-radius: 15px;
-  box-shadow:
-    inset 0 1.5px 0 rgba(255,255,255,.3),
-    0 6px 20px rgba(37,99,235,.32);
-  color: #fff; font-size: 16px; font-weight: 800;
-  cursor: pointer; transition: transform .12s, box-shadow .12s;
-  letter-spacing: .2px;
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.28), 0 5px 18px rgba(37,99,235,.3);
+  color: #fff; font-size: 16px; font-weight: 800; cursor: pointer;
+  transition: transform .12s; letter-spacing: .2px;
 }
-#mb-checkout-btn:active {
-  transform: scale(.97);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 2px 10px rgba(37,99,235,.2);
-}
+#mb-checkout-btn:active { transform: scale(.97); }
 /* ══ BOTTOM NAV ══ */
 #mb-nav {
   display: none;
@@ -3495,8 +3426,12 @@ async function api(method,url,body){
 }
 
 // ── MODAL ─────────────────────────────────────────────────────
-function modal(html){$('mc').innerHTML=`<div class="mbg" id="_am" onclick="if(event.target.id==='_am')cModal()">${html}</div>`;}
-function cModal(){$('mc').innerHTML='';}
+function modal(html){
+  $('mc').innerHTML=`<div class="mbg" id="_am" onclick="if(event.target.id==='_am')cModal()">${html}</div>`;
+  // Dam bao mc hien tren ca mobile app
+  $('mc').style.zIndex = '99999';
+}
+function cModal(){$('mc').innerHTML=''; $('mc').style.zIndex='';}
 
 // ── LOGIN ─────────────────────────────────────────────────────
 function swLTab(t){
