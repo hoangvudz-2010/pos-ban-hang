@@ -2874,6 +2874,133 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 .go-preset-btn:hover{background:rgba(47,122,255,.14);color:var(--p);border-color:rgba(47,122,255,.35);transform:translateY(-2px)}
 .go-preset-btn.active{background:rgba(47,122,255,.20);color:var(--p);border-color:rgba(47,122,255,.45);box-shadow:var(--glow-p),inset 0 1px 0 rgba(255,255,255,.70)}
 
+/* ================================================================
+   MOBILE RESPONSIVE (max-width: 768px)
+   Desktop layout khong thay doi gi ca
+   ================================================================ */
+#mb-nav { display: none; }
+
+@media (max-width: 768px) {
+
+  /* Topbar */
+  #topbar { height: 50px; padding: 0 12px; gap: 8px; }
+  .brand { font-size: 13px !important; }
+  .ttime { font-size: 10px !important; letter-spacing: 0 !important; }
+
+  /* Main: 2 panel ngang, slide bang transform */
+  #main { padding: 0; gap: 0; overflow: hidden; position: relative; }
+
+  #pos-page {
+    display: flex !important;
+    flex-direction: row;
+    width: 200%;
+    height: 100%;
+    transition: transform .30s cubic-bezier(.4,0,.2,1);
+    will-change: transform;
+  }
+  #pos-page.mb-show-bill { transform: translateX(-50%); }
+
+  #nb {
+    flex: 0 0 50%;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #bill-panel {
+    flex: 0 0 50%;
+    min-width: 0;
+    height: 100%;
+    border-radius: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  /* Bottom nav bar */
+  #mb-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 58px;
+    z-index: 500;
+    background: rgba(200,225,255,calc(var(--water-fill,0.06)*2));
+    backdrop-filter: blur(var(--water-blur,18px)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--water-blur,18px)) saturate(160%);
+    border-top: 1px solid rgba(255,255,255,.65);
+    box-shadow: 0 -4px 20px rgba(30,80,200,.10), inset 0 1px 0 rgba(255,255,255,.80);
+  }
+  .mb-btn {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    background: none; border: none; cursor: pointer;
+    font-size: 10px; font-weight: 700;
+    color: rgba(60,100,180,.55);
+    letter-spacing: .4px; text-transform: uppercase;
+    position: relative;
+    transition: color .2s;
+  }
+  .mb-btn .mb-ico { font-size: 19px; line-height: 1; transition: transform .2s; }
+  .mb-btn.active { color: var(--p); }
+  .mb-btn.active .mb-ico { transform: translateY(-2px); }
+  .mb-btn::before {
+    content: '';
+    position: absolute; top: 0; left: 25%; right: 25%;
+    height: 2.5px; border-radius: 0 0 3px 3px;
+    background: var(--p); opacity: 0;
+    transition: opacity .2s;
+  }
+  .mb-btn.active::before { opacity: 1; }
+
+  /* Badge so mon tren nut bill */
+  .mb-badge {
+    display: none;
+    position: absolute; top: 6px; right: calc(50% - 20px);
+    background: var(--d); color: #fff;
+    font-size: 9px; font-weight: 800;
+    min-width: 15px; height: 15px;
+    border-radius: 99px; padding: 0 3px;
+    align-items: center; justify-content: center;
+    border: 1.5px solid rgba(255,255,255,.9);
+    box-shadow: 0 1px 4px rgba(220,50,50,.35);
+  }
+  .mb-badge.show { display: flex; }
+
+  /* Padding bottom tranh bi nav che */
+  .nb-content { overflow: hidden; }
+  #tab-tables .table-area { padding-bottom: 72px; }
+  #tab-menu .menu-items { padding-bottom: 72px; }
+  .bill-body { padding-bottom: 4px; }
+  .bill-btns { margin-bottom: 62px; }
+
+  /* Tab nho hon */
+  .nb-tab { padding: 11px 8px; font-size: 10px; }
+
+  /* Lich su: stack doc */
+  .hist-body { flex-direction: column; }
+  .hist-left { border-right: none; border-bottom: 1px solid var(--edge-lo); max-height: 52vh; overflow-y: auto; }
+  .hist-right { flex: 1; min-height: 180px; }
+
+  /* Stat cards: 2 cot */
+  .scs { grid-template-columns: repeat(2,1fr) !important; }
+
+  /* Filter bar cuon ngang */
+  .hist-bar {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    gap: 7px !important;
+    padding: 8px 10px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .hist-bar::-webkit-scrollbar { display: none; }
+  .hrev-badge { display: none; }
+}
+
 """
 # Combine all CSS
 CSS = CSS + CSS_LOADER
@@ -4453,6 +4580,108 @@ _dsObs.observe(document.body, { childList: true, subtree: true });
   document.head.appendChild(style);
 })();
 
+// ============================================================
+//  MOBILE NAVIGATION & SWIPE
+// ============================================================
+var _mbPanel = 'tables'; // 'tables' | 'menu' | 'bill'
+
+function isMobile() { return window.innerWidth <= 768; }
+
+function mbGoTo(panel, noNbSwitch) {
+  if (!isMobile()) return;
+  _mbPanel = panel;
+
+  // Highlight active nav button
+  ['tables','menu','bill'].forEach(function(p) {
+    var b = document.getElementById('mbn-' + p);
+    if (b) b.classList.toggle('active', p === panel);
+  });
+
+  var pos = document.getElementById('pos-page');
+  if (!pos) return;
+
+  if (panel === 'bill') {
+    pos.classList.add('mb-show-bill');
+  } else {
+    pos.classList.remove('mb-show-bill');
+    if (!noNbSwitch) showNbTab(panel === 'menu' ? 'menu' : 'tables');
+  }
+}
+
+// Cap nhat badge so luong mon tren nut bill
+function mbUpdateBadge() {
+  var badge = document.getElementById('mb-badge');
+  if (!badge) return;
+  var table = S.curTable;
+  var tab = table && S.activeTab[table];
+  var items = (tab && S.store[table] && S.store[table][tab]) || [];
+  var count = items.reduce(function(s, i) { return s + (i.quantity || 1); }, 0);
+  badge.textContent = count > 0 ? count : '';
+  badge.classList.toggle('show', count > 0);
+}
+
+// Vuot chuyen man hinh
+(function() {
+  var tx = 0, ty = 0, _swipeLocked = false;
+
+  document.addEventListener('touchstart', function(e) {
+    if (!isMobile()) return;
+    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
+    tx = e.touches[0].clientX;
+    ty = e.touches[0].clientY;
+    _swipeLocked = false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (!isMobile() || _swipeLocked) return;
+    var dx = e.touches[0].clientX - tx;
+    var dy = e.touches[0].clientY - ty;
+    // Neu vuot doc hon ngang thi khoa lai, khong lam gi
+    if (Math.abs(dy) > Math.abs(dx) + 10) { _swipeLocked = true; }
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    if (!isMobile() || _swipeLocked) return;
+    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
+    var dx = e.changedTouches[0].clientX - tx;
+    var dy = e.changedTouches[0].clientY - ty;
+    if (Math.abs(dx) < 55 || Math.abs(dy) > Math.abs(dx)) return;
+
+    if (_mbPanel === 'tables') {
+      if (dx < 0) mbGoTo('menu');
+    } else if (_mbPanel === 'menu') {
+      if (dx > 0) mbGoTo('tables');
+      else mbGoTo('bill');
+    } else if (_mbPanel === 'bill') {
+      if (dx > 0) mbGoTo('menu');
+    }
+  }, { passive: true });
+})();
+
+// Khi chon ban tren mobile -> tu dong sang menu
+document.addEventListener('click', function(e) {
+  if (!isMobile()) return;
+  if (!e.target.closest('.tcard')) return;
+  setTimeout(function() {
+    if (S.curTable) mbGoTo('menu', false);
+  }, 60);
+});
+
+// Patch rBill de cap nhat badge
+var _origRBill = rBill;
+function rBill() {
+  _origRBill.apply(this, arguments);
+  mbUpdateBadge();
+}
+
+// Reset khi resize ve desktop
+window.addEventListener('resize', function() {
+  if (!isMobile()) {
+    var pos = document.getElementById('pos-page');
+    if (pos) pos.classList.remove('mb-show-bill');
+  }
+});
+
 """
 
 def build_page():
@@ -4684,6 +4913,18 @@ def build_page():
         '</div>',
         '<div id="mc"></div>',
         '<div id="hpop-portal"></div>',
+        """<div id="mb-nav">
+  <button class="mb-btn active" id="mbn-tables" onclick="mbGoTo('tables')">
+    <span class="mb-ico">&#x1F37D;</span>Chon ban
+  </button>
+  <button class="mb-btn" id="mbn-menu" onclick="mbGoTo('menu')">
+    <span class="mb-ico">&#x2615;</span>Thuc don
+  </button>
+  <button class="mb-btn" id="mbn-bill" onclick="mbGoTo('bill')">
+    <span class="mb-ico">&#x1F6D2;</span>Don hang
+    <span class="mb-badge" id="mb-badge"></span>
+  </button>
+</div>""",
         f"<script>{JS}</script>",
         "</body>",
         "</html>",
@@ -4992,5 +5233,5 @@ if __name__ == "__main__":
     if debug:
         import webbrowser
         threading.Timer(1.3, lambda: webbrowser.open(f"http://127.0.0.1:{port}")).start()
-    print(f"  🚀  POS BÁN HÀNG đang chạy tại http://0.0.0.0:{port}")
+    print(f"  POS BAN HANG dang chay tai http://0.0.0.0:{port}")
     flask_app.run(debug=debug, host="0.0.0.0", port=port)
