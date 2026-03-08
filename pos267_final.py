@@ -2883,185 +2883,142 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 .go-preset-btn.active{background:rgba(47,122,255,.20);color:var(--p);border-color:rgba(47,122,255,.45);box-shadow:var(--glow-p),inset 0 1px 0 rgba(255,255,255,.70)}
 
 /* ================================================================
-   MOBILE: portrait (chieu ngang <= chieu doc)
-   Desktop landscape: khong thay doi gi
+   MOBILE (portrait / width < height)
+   Dung JS de an/hien panel, CSS chi lo visual
    ================================================================ */
 #mb-nav { display: none; }
 
 @media (orientation: portrait), (max-aspect-ratio: 1/1) {
 
-  /* --- Topbar --- */
+  /* Topbar */
   #topbar { height: 50px; padding: 0 12px; gap: 8px; }
-  .brand { font-size: 13px !important; }
-  .ttime { font-size: 10px !important; letter-spacing: 0 !important; }
+  .brand  { font-size: 13px !important; }
+  .ttime  { font-size: 10px !important; letter-spacing: 0 !important; }
 
-  /* --- Dropdown ☰ duc hon tren mobile --- */
+  /* Dropdown duc hon */
   .ddlist {
     background: rgba(235,246,255,.98) !important;
-    box-shadow: 0 8px 32px rgba(20,50,140,.22), 0 0 0 1px rgba(120,180,255,.6) !important;
+    box-shadow: 0 8px 32px rgba(20,50,140,.25),
+                0 0 0 1px rgba(100,160,255,.65) !important;
   }
+  .ddi { color: rgba(20,40,110,.85) !important; }
 
-  /* --- Layout chinh: moi view chiem full man hinh --- */
-  #main {
-    padding: 0; gap: 0;
-    overflow: hidden;
+  /* Main container */
+  #main { padding: 0; gap: 0; overflow: hidden; }
+
+  /* pos-page: full kich thuoc, JS se an/hien #nb va #bill-panel */
+  #pos-page {
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
     position: relative;
   }
 
-  /* pos-page: container truot ngang chua 2 panel */
-  #pos-page {
-    display: flex !important;
-    flex-direction: row;
-    /* 3 "trang": ban, menu, bill — moi trang 100vw */
-    width: 300%;
-    height: 100%;
-    transition: transform .32s cubic-bezier(.4,0,.2,1);
-    will-change: transform;
-  }
-  /* Slides: mac dinh = trang 1 (ban), -33.33% = menu, -66.67% = bill */
-  #pos-page.mb-show-menu  { transform: translateX(-33.333%); }
-  #pos-page.mb-show-bill  { transform: translateX(-66.667%); }
-
-  /* NB chia doi: ban chiem 1/3, menu chiem 1/3 → moi cai 50% cua nb */
+  /* Moi panel chiem toan bo man hinh, an/hien qua JS */
   #nb {
-    flex: 0 0 66.667%; /* 2 trang trong 3 */
-    min-width: 0;
-    height: 100%;
-    overflow: hidden;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
     display: flex;
     flex-direction: column;
+    transition: transform .30s cubic-bezier(.4,0,.2,1),
+                opacity .25s ease;
   }
-  /* Noi dung nb (tab-tables + tab-menu) truot doc lap */
-  .nb-content {
-    display: flex;
-    flex-direction: row;
-    overflow: hidden;
-    flex: 1;
-  }
-  #tab-tables {
-    flex: 0 0 50%;
-    min-width: 0;
-    height: 100%;
-    overflow-y: auto;
-    display: flex !important;
-    flex-direction: column;
-  }
-  #tab-tables.hide { display: flex !important; } /* luon hien, truot bang nb */
-  #tab-menu {
-    flex: 0 0 50%;
-    min-width: 0;
-    height: 100%;
-    overflow: hidden;
-    display: flex !important;
-    flex-direction: column;
-  }
-  #tab-menu.show, #tab-menu { display: flex !important; }
-
-  /* Bill panel: 1/3 cua pos-page = 100vw */
   #bill-panel {
-    flex: 0 0 33.333%;
-    min-width: 0;
-    height: 100%;
-    border-radius: 0;
-    border: none;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    border: none !important;
     display: flex;
     flex-direction: column;
+    transition: transform .30s cubic-bezier(.4,0,.2,1),
+                opacity .25s ease;
   }
 
-  /* Hist page: an khi o pos mode, full screen khi mo */
+  /* Trang thai an (JS them class .mb-hidden) */
+  #nb.mb-hidden        { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+  #bill-panel.mb-hidden { transform: translateX(100%);  opacity: 0; pointer-events: none; }
+
+  /* Hist page: overlay toan man hinh */
   #hist-page {
     position: absolute !important;
-    inset: 0;
+    inset: 0 !important;
     z-index: 200;
-    display: none !important;
-    flex-direction: column;
-  }
-  #hist-page.show {
-    display: flex !important;
   }
 
-  /* --- Bottom nav bar --- */
+  /* Bottom nav */
   #mb-nav {
     display: flex;
     position: fixed;
     bottom: 0; left: 0; right: 0;
     height: 60px;
     z-index: 500;
-    background: rgba(220,236,255,.97);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border-top: 1px solid rgba(150,200,255,.5);
-    box-shadow: 0 -4px 20px rgba(30,80,200,.12), inset 0 1px 0 rgba(255,255,255,.9);
+    background: rgba(225,238,255,.97);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-top: 1px solid rgba(140,190,255,.45);
+    box-shadow: 0 -2px 16px rgba(30,80,200,.10),
+                inset 0 1px 0 rgba(255,255,255,.95);
   }
   .mb-btn {
-    flex: 1;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 3px;
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
     background: none; border: none; cursor: pointer;
-    font-size: 9px; font-weight: 700;
-    color: rgba(60,100,180,.45);
-    letter-spacing: .3px; text-transform: uppercase;
-    position: relative;
-    transition: color .2s;
+    font-size: 9px; font-weight: 700; letter-spacing: .3px;
+    text-transform: uppercase; color: rgba(60,100,180,.40);
+    position: relative; transition: color .2s;
     padding: 0;
   }
-  .mb-btn .mb-ico { font-size: 20px; line-height: 1; transition: transform .2s; }
-  .mb-btn.active { color: var(--p); }
+  .mb-btn .mb-ico { font-size: 21px; line-height: 1; transition: transform .2s; }
+  .mb-btn.active  { color: var(--p); }
   .mb-btn.active .mb-ico { transform: translateY(-2px); }
   .mb-btn::before {
-    content: '';
-    position: absolute; top: 0; left: 20%; right: 20%;
-    height: 2.5px; border-radius: 0 0 3px 3px;
-    background: var(--p); opacity: 0;
-    transition: opacity .2s;
+    content: ''; position: absolute;
+    top: 0; left: 20%; right: 20%; height: 2.5px;
+    border-radius: 0 0 3px 3px;
+    background: var(--p); opacity: 0; transition: opacity .2s;
   }
   .mb-btn.active::before { opacity: 1; }
 
-  /* Badge so mon */
+  /* Badge */
   .mb-badge {
     display: none;
     position: absolute; top: 5px; right: calc(50% - 22px);
     background: #ef4444; color: #fff;
     font-size: 9px; font-weight: 800;
-    min-width: 16px; height: 16px;
-    border-radius: 99px; padding: 0 3px;
+    min-width: 16px; height: 16px; border-radius: 99px; padding: 0 3px;
     align-items: center; justify-content: center;
-    border: 2px solid rgba(235,246,255,.97);
-    box-shadow: 0 1px 4px rgba(200,40,40,.3);
+    border: 2px solid rgba(225,238,255,.97);
   }
   .mb-badge.show { display: flex; }
 
-  /* Padding bottom tranh nav che noi dung */
-  #tab-tables .table-area { padding-bottom: 70px; }
-  #tab-menu .menu-items   { padding-bottom: 70px; }
+  /* Padding bottom (60px nav + them 8px) */
+  #tab-tables .table-area { padding-bottom: 68px; }
+  #tab-menu .menu-items   { padding-bottom: 68px; }
   .bill-body              { padding-bottom: 2px; }
-  .bill-btns              { padding-bottom: 68px; }
+  .bill-btns              { padding-bottom: 66px; }
 
-  /* NB tabs nho hon (2 tab cho 2/3 width) */
-  .nb-tabs { border-radius: 0; border-left: none; border-right: none; border-top: none; }
-  .nb-tab  { padding: 10px 6px; font-size: 10px; }
+  /* NB tabs */
+  .nb-tabs { border-radius: 0; }
+  .nb-tab  { padding: 11px 8px; font-size: 10px; }
 
   /* Lich su doc */
   .hist-body  { flex-direction: column; }
-  .hist-left  { border-right: none; border-bottom: 1px solid var(--edge-lo); max-height: 50vh; }
+  .hist-left  { border-right: none; border-bottom: 1px solid var(--edge-lo); max-height: 50vh; overflow-y: auto; }
   .hist-right { flex: 1; min-height: 180px; }
-
-  /* Stat cards 2 cot */
   .scs { grid-template-columns: repeat(2,1fr) !important; }
-
-  /* Filter bar cuon ngang */
   .hist-bar {
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-    gap: 7px !important;
-    padding: 8px 10px !important;
+    flex-wrap: nowrap !important; overflow-x: auto;
+    gap: 7px !important; padding: 8px 10px !important;
     -webkit-overflow-scrolling: touch;
   }
   .hist-bar::-webkit-scrollbar { display: none; }
   .hrev-badge { display: none; }
 }
-
 """
 # Combine all CSS
 CSS = CSS + CSS_LOADER
@@ -4642,98 +4599,108 @@ _dsObs.observe(document.body, { childList: true, subtree: true });
 })();
 
 // ============================================================
-//  MOBILE NAVIGATION & SWIPE
+//  MOBILE - an/hien panel bang JS
 // ============================================================
-var _mbPanel = 'tables'; // 'tables' | 'menu' | 'bill'
+var _mbPanel = 'tables';
 
 function isMobile() {
   return window.innerWidth < window.innerHeight;
 }
 
-function mbApplySlide() {
-  var pos = document.getElementById('pos-page');
-  if (!pos) return;
-  pos.classList.remove('mb-show-menu','mb-show-bill');
-  if (_mbPanel === 'menu')  pos.classList.add('mb-show-menu');
-  if (_mbPanel === 'bill')  pos.classList.add('mb-show-bill');
+function mbApply() {
+  if (!isMobile()) {
+    // Desktop: reset tat ca
+    var nb  = document.getElementById('nb');
+    var bp  = document.getElementById('bill-panel');
+    if (nb)  nb.classList.remove('mb-hidden');
+    if (bp)  bp.classList.remove('mb-hidden');
+    return;
+  }
+  var nb = document.getElementById('nb');
+  var bp = document.getElementById('bill-panel');
+  if (!nb || !bp) return;
+
+  if (_mbPanel === 'bill') {
+    nb.classList.add('mb-hidden');
+    bp.classList.remove('mb-hidden');
+  } else {
+    nb.classList.remove('mb-hidden');
+    bp.classList.add('mb-hidden');
+    // Chuyen tab trong NB
+    if (_mbPanel === 'menu')   showNbTab('menu');
+    if (_mbPanel === 'tables') showNbTab('tables');
+  }
 }
 
 function mbGoTo(panel) {
-  if (!isMobile()) return;
   _mbPanel = panel;
 
-  // Nav buttons
+  // Cap nhat nav buttons
   ['tables','menu','bill'].forEach(function(p) {
     var b = document.getElementById('mbn-' + p);
     if (b) b.classList.toggle('active', p === panel);
   });
 
-  mbApplySlide();
+  mbApply();
 }
 
 function mbUpdateBadge() {
   var badge = document.getElementById('mb-badge');
   if (!badge) return;
   var table = S.curTable;
-  var tab = table && S.activeTab[table];
+  var tab   = table && S.activeTab[table];
   var items = (tab && S.store[table] && S.store[table][tab]) || [];
-  var count = items.reduce(function(s, i) { return s + (i.quantity || 1); }, 0);
+  var count = items.reduce(function(s,i){ return s+(i.quantity||1); }, 0);
   badge.textContent = count > 0 ? count : '';
   badge.classList.toggle('show', count > 0);
 }
 
 // Swipe de chuyen trang
-(function() {
-  var tx = 0, ty = 0, locked = false;
+(function(){
+  var tx=0, ty=0, locked=false;
+  var order = ['tables','menu','bill'];
 
-  document.addEventListener('touchstart', function(e) {
+  document.addEventListener('touchstart', function(e){
     if (!isMobile()) return;
-    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop,#hist-page')) return;
+    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
     tx = e.touches[0].clientX;
     ty = e.touches[0].clientY;
     locked = false;
-  }, { passive: true });
+  }, {passive:true});
 
-  document.addEventListener('touchmove', function(e) {
+  document.addEventListener('touchmove', function(e){
     if (!isMobile() || locked) return;
-    var dy = Math.abs(e.touches[0].clientY - ty);
-    var dx = Math.abs(e.touches[0].clientX - tx);
-    if (dy > dx + 8) locked = true;
-  }, { passive: true });
+    if (Math.abs(e.touches[0].clientY - ty) > Math.abs(e.touches[0].clientX - tx) + 8)
+      locked = true;
+  }, {passive:true});
 
-  document.addEventListener('touchend', function(e) {
+  document.addEventListener('touchend', function(e){
     if (!isMobile() || locked) return;
-    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop,#hist-page')) return;
+    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
     var dx = e.changedTouches[0].clientX - tx;
     var dy = e.changedTouches[0].clientY - ty;
     if (Math.abs(dx) < 55 || Math.abs(dy) > Math.abs(dx)) return;
-
-    var order = ['tables','menu','bill'];
     var idx = order.indexOf(_mbPanel);
-    if (dx < 0 && idx < order.length - 1) mbGoTo(order[idx + 1]);
-    if (dx > 0 && idx > 0)               mbGoTo(order[idx - 1]);
-  }, { passive: true });
+    if (dx < 0 && idx < order.length-1) mbGoTo(order[idx+1]);
+    if (dx > 0 && idx > 0)              mbGoTo(order[idx-1]);
+  }, {passive:true});
 })();
 
-// Chon ban -> sang menu
-document.addEventListener('click', function(e) {
+// Chon ban -> tu dong sang menu
+document.addEventListener('click', function(e){
   if (!isMobile()) return;
   if (!e.target.closest('.tcard')) return;
-  setTimeout(function() {
-    if (S.curTable) mbGoTo('menu');
-  }, 60);
+  setTimeout(function(){ if (S.curTable) mbGoTo('menu'); }, 60);
 });
 
-// Patch showView: khi vao hist tren mobile thi an pos, nguoc lai hien lai
+// Patch showView: an/hien nav khi vao lich su
 var _origShowView = showView;
 function showView(v) {
   _origShowView(v);
-  if (isMobile()) {
-    var nav = document.getElementById('mb-nav');
-    if (nav) nav.style.display = v === 'hist' ? 'none' : 'flex';
-    // Khi quay ve pos tu hist
-    if (v === 'pos') mbApplySlide();
-  }
+  if (!isMobile()) return;
+  var nav = document.getElementById('mb-nav');
+  if (nav) nav.style.display = v === 'hist' ? 'none' : 'flex';
+  if (v === 'pos') mbApply();
 }
 
 // Patch rBill: cap nhat badge
@@ -4743,18 +4710,17 @@ function rBill() {
   mbUpdateBadge();
 }
 
-// Resize: doi che do
-window.addEventListener('resize', function() {
-  if (!isMobile()) {
-    var pos = document.getElementById('pos-page');
-    if (pos) { pos.classList.remove('mb-show-menu','mb-show-bill'); }
-    var nav = document.getElementById('mb-nav');
-    if (nav) nav.style.display = '';
-    _mbPanel = 'tables';
-  } else {
-    mbApplySlide();
-  }
+// Resize
+window.addEventListener('resize', function(){
+  mbApply();
+  // Hien/an nav
+  var nav = document.getElementById('mb-nav');
+  if (nav && isMobile()) nav.style.display = 'flex';
+  if (nav && !isMobile()) nav.style.display = '';
 });
+
+// Khoi dong: ap dung ngay
+setTimeout(function(){ mbApply(); }, 100);
 
 """
 
