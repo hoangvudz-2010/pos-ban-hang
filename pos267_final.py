@@ -22,9 +22,9 @@ DRIVE_DATA_FILE     = "pos_data.json"
 DRIVE_USERS_FILE    = "users.json"
 DRIVE_SETTINGS_FILE = "settings.json"
 
+# RAM cache - chi doc Drive 1 lan khi khoi dong, sau do dung RAM
 _cache = {}
 _cache_time = {}
-CACHE_TTL = 5
 
 # ── EMAIL ─────────────────────────────────────────────────────
 _EK = b'POS2024SecretKey'
@@ -69,21 +69,27 @@ def get_drive():
         print(f"[Drive] Lỗi kết nối: {e}")
         return None
 
+_file_id_cache = {}  # cache file IDs de khong phai list Drive moi lan
+
 def drive_find_file(name):
+    if name in _file_id_cache:
+        return _file_id_cache[name]
     try:
         svc = get_drive()
         if not svc: return None
         q = f"name='{name}' and '{GDRIVE_FOLDER_ID}' in parents and trashed=false"
         res = svc.files().list(q=q, fields="files(id,name)").execute()
         files = res.get("files", [])
-        return files[0]["id"] if files else None
+        fid = files[0]["id"] if files else None
+        if fid: _file_id_cache[name] = fid
+        return fid
     except Exception as e:
-        print(f"[Drive] Lỗi tìm {name}: {e}")
+        print(f"[Drive] Loi tim {name}: {e}")
         return None
 
 def drive_read(name):
-    import time
-    if name in _cache and time.time() - _cache_time.get(name, 0) < CACHE_TTL:
+    # Neu co trong RAM roi thi dung luon (khong goi Drive)
+    if name in _cache:
         return _cache[name]
     try:
         svc = get_drive()
@@ -97,14 +103,15 @@ def drive_read(name):
         done = False
         while not done: _, done = dl.next_chunk()
         data = json.loads(buf.getvalue().decode("utf-8"))
-        _cache[name] = data; _cache_time[name] = time.time()
+        _cache[name] = data
+        print(f"[Drive] Loaded {name} into RAM cache")
         return data
     except Exception as e:
-        print(f"[Drive] Lỗi đọc {name}: {e}")
+        print(f"[Drive] Loi doc {name}: {e}")
         return None
 
-def drive_write(name, data):
-    import time
+def _drive_write_sync(name, data):
+    """Ghi Drive (goi tu background thread)"""
     try:
         svc = get_drive()
         if not svc: return False
@@ -114,19 +121,21 @@ def drive_write(name, data):
         media = MediaIoBaseUpload(io.BytesIO(content), mimetype="application/json")
         fid = drive_find_file(name)
         if not fid:
-            print(f"[Drive] File {name} chua co trong folder. Hay tao thu cong truoc.")
+            print(f"[Drive] File {name} chua co trong folder")
             return False
-        # Chi UPDATE - file phai duoc tao boi chinh chu Drive (khong bi loi quota)
-        svc.files().update(
-            fileId=fid,
-            media_body=media,
-            supportsAllDrives=True
-        ).execute()
-        _cache[name] = data; _cache_time[name] = time.time()
+        svc.files().update(fileId=fid, media_body=media, supportsAllDrives=True).execute()
+        print(f"[Drive] Saved {name} to Drive (background)")
         return True
     except Exception as e:
         print(f"[Drive] Loi ghi {name}: {e}")
         return False
+
+def drive_write(name, data):
+    """Cap nhat RAM ngay lap tuc, ghi Drive trong background (khong lam cham request)"""
+    _cache[name] = data  # RAM cap nhat ngay
+    t = threading.Thread(target=_drive_write_sync, args=(name, data), daemon=True)
+    t.start()
+    return True
 
 def _use_drive():
     return bool(GDRIVE_CREDENTIALS and GDRIVE_FOLDER_ID)
@@ -3018,7 +3027,344 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
   }
   .hist-bar::-webkit-scrollbar { display: none; }
   .hrev-badge { display: none; }
+
+  /* --- TẮT ANIMATION NẶNG TRÊN MOBILE --- */
+  /* Tat tat ca animation khong can thiet */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.15s !important;
+  }
+  /* Ngoai tru cac animation can thiet */
+  #ldrb, .nb-tab::after, .mb-btn::before {
+    animation-duration: revert !important;
+    animation-iteration-count: revert !important;
+  }
+  /* Giam backdrop-filter xuong muc toi thieu */
+  * {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+  /* Cac phan khong can blur thi tat han */
+  .holi, .holi-grp-hdr, .bitem, .tcard {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Tat grain animation */
+  .grain { display: none; }
+  /* Tat prism animation tren topbar */
+  #topbar::before { animation: none !important; }
+  /* Tat causticsShift */
+  .ddlist::before { animation: none !important; filter: none !important; }
+
+  /* ══ AN desktop UI, HIEN mobile UI ══ */
+  #topbar { display: none !important; }
+  #main   { display: none !important; }
+  #mb-app { display: flex !important; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   MOBILE APP UI
+   ══════════════════════════════════════════════════════════ */
+#mb-app {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+}
+
+/* ── Header ── */
+#mb-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 10px;
+  flex-shrink: 0;
+}
+#mb-brand {
+  font-size: 16px; font-weight: 800;
+  background: linear-gradient(135deg, #1e40af, #4f46e5);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: -0.3px;
+}
+#mb-user-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(79,70,229,.18), rgba(30,64,175,.12));
+  border: 1.5px solid rgba(79,70,229,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+#mb-menu-popup {
+  position: fixed; top: 56px; right: 12px;
+  background: rgba(245,249,255,.98);
+  border: 1px solid rgba(100,150,255,.3);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(30,60,180,.18), 0 0 0 1px rgba(255,255,255,.8);
+  min-width: 200px; padding: 8px;
+  z-index: 9000; display: none;
+}
+#mb-menu-popup.open { display: block; }
+.mb-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border: none; background: none;
+  width: 100%; text-align: left; border-radius: 10px;
+  font-size: 14px; font-weight: 600; color: #1e3a8a;
+  cursor: pointer; transition: background .15s;
+}
+.mb-menu-item:active { background: rgba(79,70,229,.1); }
+.mb-menu-sep { height: 1px; background: rgba(100,150,255,.15); margin: 4px 0; }
+
+/* ── Page container ── */
+#mb-pages {
+  flex: 1; overflow: hidden;
+  position: relative;
+}
+.mb-page {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  overflow: hidden;
+}
+.mb-page.active { display: flex; }
+
+/* ══ TRANG 1: CHỌN BÀN ══ */
+#mb-p-tables {}
+#mb-p-tables .mb-pg-title {
+  padding: 0 16px 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: rgba(30,64,175,.55);
+}
+#mb-tgrid {
+  flex: 1; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; padding: 4px 14px 80px;
+}
+.mb-tcard {
+  aspect-ratio: 1;
+  border-radius: 18px;
+  border: 1.5px solid rgba(200,220,255,.6);
+  background: rgba(255,255,255,.55);
+  backdrop-filter: blur(6px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  position: relative; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(30,60,180,.08), inset 0 1px 0 rgba(255,255,255,.9);
+}
+.mb-tcard:active { transform: scale(.93); }
+.mb-tcard.busy {
+  background: rgba(255,237,213,.7);
+  border-color: rgba(249,115,22,.35);
+}
+.mb-tcard.sel {
+  background: rgba(219,234,254,.85);
+  border-color: rgba(59,130,246,.55);
+  box-shadow: 0 0 0 2.5px rgba(59,130,246,.3), 0 4px 16px rgba(59,130,246,.2);
+}
+.mb-tcard-name {
+  font-size: 13px; font-weight: 800;
+  color: #1e3a8a; text-align: center; line-height: 1.1;
+}
+.mb-tcard-status {
+  font-size: 9px; font-weight: 600;
+  color: rgba(30,64,175,.45); text-transform: uppercase; letter-spacing: .5px;
+}
+.mb-tcard.busy .mb-tcard-status { color: #ea580c; }
+.mb-tcard-total {
+  font-size: 11px; font-weight: 700; color: #ea580c;
+}
+.mb-tcard-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #d1d5db;
+}
+.mb-tcard.busy .mb-tcard-dot { background: #f97316; }
+.mb-tcard.sel .mb-tcard-dot  { background: #3b82f6; }
+
+/* ══ TRANG 2: THỰC ĐƠN ══ */
+#mb-p-menu {}
+#mb-menu-header {
+  padding: 0 16px 8px; flex-shrink: 0;
+}
+#mb-table-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(219,234,254,.8); border: 1px solid rgba(59,130,246,.3);
+  border-radius: 99px; padding: 5px 12px;
+  font-size: 12px; font-weight: 700; color: #1e40af;
+  margin-bottom: 8px;
+}
+#mb-catbar {
+  display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+#mb-catbar::-webkit-scrollbar { display: none; }
+.mb-cat {
+  flex-shrink: 0; padding: 7px 14px;
+  border-radius: 99px; border: 1.5px solid rgba(200,220,255,.5);
+  background: rgba(255,255,255,.5); backdrop-filter: blur(6px);
+  font-size: 12px; font-weight: 700; color: rgba(30,64,175,.6);
+  cursor: pointer; white-space: nowrap;
+  transition: all .15s;
+}
+.mb-cat.on {
+  background: rgba(59,130,246,.15); border-color: rgba(59,130,246,.45);
+  color: #1e40af;
+}
+#mb-mitems {
+  flex: 1; overflow-y: auto;
+  padding: 6px 12px 80px;
+}
+.mb-mitem {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; margin-bottom: 6px;
+  background: rgba(255,255,255,.6); backdrop-filter: blur(6px);
+  border: 1px solid rgba(200,220,255,.5);
+  border-radius: 14px; cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  box-shadow: 0 1px 6px rgba(30,60,180,.06), inset 0 1px 0 rgba(255,255,255,.9);
+}
+.mb-mitem:active { transform: scale(.97); }
+.mb-mitem-icon { font-size: 26px; line-height: 1; flex-shrink: 0; }
+.mb-mitem-info { flex: 1; min-width: 0; }
+.mb-mitem-name {
+  font-size: 14px; font-weight: 700; color: #1e3a8a;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mb-mitem-price { font-size: 12px; font-weight: 600; color: #2563eb; }
+.mb-mitem-add {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #4f46e5);
+  border: none; color: #fff; font-size: 18px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(59,130,246,.35);
+  transition: transform .12s;
+}
+.mb-mitem-add:active { transform: scale(.88); }
+
+/* ══ TRANG 3: ĐƠN HÀNG ══ */
+#mb-p-bill {}
+#mb-bill-header {
+  padding: 0 16px 8px; flex-shrink: 0;
+}
+#mb-bill-table {
+  font-size: 16px; font-weight: 800; color: #1e3a8a;
+  margin-bottom: 4px;
+}
+#mb-bill-tabs {
+  display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;
+}
+#mb-bill-tabs::-webkit-scrollbar { display: none; }
+.mb-otab {
+  flex-shrink: 0; padding: 6px 14px;
+  border-radius: 99px; border: 1.5px solid rgba(200,220,255,.5);
+  background: rgba(255,255,255,.5);
+  font-size: 12px; font-weight: 700; color: rgba(30,64,175,.55);
+  cursor: pointer; white-space: nowrap; transition: all .15s;
+}
+.mb-otab.on {
+  background: rgba(59,130,246,.15); border-color: rgba(59,130,246,.5);
+  color: #1e40af;
+}
+#mb-billbody {
+  flex: 1; overflow-y: auto; padding: 4px 14px 8px;
+}
+.mb-bitem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 6px;
+  background: rgba(255,255,255,.6); backdrop-filter: blur(6px);
+  border: 1px solid rgba(200,220,255,.4);
+  border-radius: 13px;
+  box-shadow: 0 1px 4px rgba(30,60,180,.05);
+}
+.mb-bitem-name { flex: 1; font-size: 13px; font-weight: 700; color: #1e3a8a; }
+.mb-bitem-qty {
+  display: flex; align-items: center; gap: 7px;
+}
+.mb-qty-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid rgba(59,130,246,.35);
+  background: rgba(219,234,254,.6);
+  font-size: 15px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: transform .1s;
+  color: #1e40af; font-weight: 700;
+}
+.mb-qty-btn:active { transform: scale(.85); }
+.mb-bitem-n { font-size: 14px; font-weight: 800; color: #1e3a8a; min-width: 20px; text-align: center; }
+.mb-bitem-price { font-size: 12px; font-weight: 700; color: #2563eb; min-width: 64px; text-align: right; }
+#mb-bill-empty {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 8px; color: rgba(30,64,175,.3);
+}
+#mb-bill-empty .ico { font-size: 52px; }
+#mb-bill-empty p { font-size: 13px; font-weight: 600; }
+
+/* Footer bill */
+#mb-bill-footer {
+  padding: 10px 14px; flex-shrink: 0;
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(200,220,255,.4);
+  padding-bottom: 72px;
+}
+#mb-total {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+#mb-total-label { font-size: 13px; font-weight: 700; color: rgba(30,64,175,.6); }
+#mb-total-val { font-size: 20px; font-weight: 800; color: #1e40af; }
+#mb-checkout-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  border: none; border-radius: 14px;
+  color: #fff; font-size: 15px; font-weight: 800;
+  letter-spacing: .3px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(37,99,235,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+#mb-checkout-btn:active { transform: scale(.97); box-shadow: 0 2px 8px rgba(37,99,235,.25); }
+
+/* ══ BOTTOM NAV ══ */
+#mb-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 62px; z-index: 5000;
+  background: rgba(240,246,255,.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(150,190,255,.3);
+  box-shadow: 0 -2px 20px rgba(30,80,200,.08);
+}
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  #mb-nav { display: flex; }
+}
+.mb-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  font-size: 9px; font-weight: 700; letter-spacing: .4px;
+  text-transform: uppercase; color: rgba(30,64,175,.3);
+  position: relative; transition: color .2s; padding: 0;
+}
+.mb-btn .mb-ico { font-size: 22px; line-height: 1; transition: transform .18s; }
+.mb-btn.active  { color: #2563eb; }
+.mb-btn.active .mb-ico { transform: translateY(-3px); }
+.mb-btn::before {
+  content: ''; position: absolute; top: 0; left: 25%; right: 25%;
+  height: 2.5px; border-radius: 0 0 4px 4px;
+  background: #2563eb; opacity: 0; transition: opacity .2s;
+}
+.mb-btn.active::before { opacity: 1; }
+.mb-badge {
+  display: none; position: absolute; top: 4px; right: calc(50% - 22px);
+  background: #ef4444; color: #fff;
+  font-size: 9px; font-weight: 800; min-width: 16px; height: 16px;
+  border-radius: 99px; padding: 0 3px;
+  align-items: center; justify-content: center;
+  border: 2px solid rgba(240,246,255,.96);
+}
+.mb-badge.show { display: flex; }
 """
 # Combine all CSS
 CSS = CSS + CSS_LOADER
@@ -4599,7 +4945,7 @@ _dsObs.observe(document.body, { childList: true, subtree: true });
 })();
 
 // ============================================================
-//  MOBILE - an/hien panel bang JS
+//  MOBILE APP - giao dien rieng cho dien thoai
 // ============================================================
 var _mbPanel = 'tables';
 
@@ -4607,41 +4953,214 @@ function isMobile() {
   return window.innerWidth < window.innerHeight;
 }
 
-function mbApply() {
-  if (!isMobile()) {
-    // Desktop: reset tat ca
-    var nb  = document.getElementById('nb');
-    var bp  = document.getElementById('bill-panel');
-    if (nb)  nb.classList.remove('mb-hidden');
-    if (bp)  bp.classList.remove('mb-hidden');
-    return;
-  }
-  var nb = document.getElementById('nb');
-  var bp = document.getElementById('bill-panel');
-  if (!nb || !bp) return;
-
-  if (_mbPanel === 'bill') {
-    nb.classList.add('mb-hidden');
-    bp.classList.remove('mb-hidden');
-  } else {
-    nb.classList.remove('mb-hidden');
-    bp.classList.add('mb-hidden');
-    // Chuyen tab trong NB
-    if (_mbPanel === 'menu')   showNbTab('menu');
-    if (_mbPanel === 'tables') showNbTab('tables');
-  }
+// ── Render tables cho mobile ──
+function mbRenderTables() {
+  var g = document.getElementById('mb-tgrid');
+  if (!g) return;
+  g.innerHTML = '';
+  S.tables.forEach(function(t) {
+    var st    = S.store[t] || {};
+    var tabs  = Object.keys(st);
+    var busy  = tabs.some(function(tid){ return (st[tid]||[]).length > 0; });
+    var total = 0;
+    tabs.forEach(function(tid){
+      (st[tid]||[]).forEach(function(i){ total += (i.price||0)*(i.quantity||1); });
+    });
+    var sel   = S.curTable === t;
+    var div   = document.createElement('div');
+    div.className = 'mb-tcard' + (busy?' busy':'') + (sel?' sel':'');
+    div.innerHTML =
+      '<div class="mb-tcard-dot"></div>' +
+      '<div class="mb-tcard-name">' + t + '</div>' +
+      '<div class="mb-tcard-status">' + (busy?'Co khach':'Trong') + '</div>' +
+      (busy && total > 0 ? '<div class="mb-tcard-total">'+fmt(total)+'</div>' : '');
+    div.onclick = function() {
+      S.tables.forEach(function(tt){
+        var el = document.querySelector('.mb-tcard[data-t="'+tt+'"]');
+        if (el) el.classList.remove('sel');
+      });
+      div.classList.add('sel');
+      // Goi selectTable goc
+      selectTable(t);
+      setTimeout(function(){ mbGoTo('menu'); }, 120);
+    };
+    div.setAttribute('data-t', t);
+    g.appendChild(div);
+  });
 }
 
-function mbGoTo(panel) {
-  _mbPanel = panel;
+// ── Render menu cho mobile ──
+function mbRenderMenu() {
+  // Table chip
+  var chip = document.getElementById('mb-table-chip');
+  if (chip) chip.innerHTML = S.curTable ?
+    '&#x1F4CD; ' + S.curTable : '&#x1F4CD; Chua chon ban';
 
-  // Cap nhat nav buttons
-  ['tables','menu','bill'].forEach(function(p) {
-    var b = document.getElementById('mbn-' + p);
-    if (b) b.classList.toggle('active', p === panel);
+  // Category bar
+  var catbar = document.getElementById('mb-catbar');
+  if (!catbar) return;
+  var curCat = S.curCat || 'Tat ca';
+  var cats = ['Tat ca'].concat(
+    [...new Set(S.menu.map(function(i){ return i.category||'Khac'; }))].sort()
+  );
+  catbar.innerHTML = '';
+  cats.forEach(function(cat) {
+    var btn = document.createElement('button');
+    btn.className = 'mb-cat' + (cat === curCat ? ' on' : '');
+    btn.textContent = cat === 'Tat ca' ? 'Tat ca' : cat;
+    btn.onclick = function() {
+      S.curCat = cat;
+      catbar.querySelectorAll('.mb-cat').forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      mbRenderMenuItems();
+    };
+    catbar.appendChild(btn);
+  });
+  mbRenderMenuItems();
+}
+
+function mbRenderMenuItems() {
+  var el   = document.getElementById('mb-mitems');
+  if (!el) return;
+  var cat  = S.curCat || 'Tat ca';
+  var list = S.menu.filter(function(i){
+    return cat === 'Tat ca' || (i.category||'Khac') === cat;
+  });
+  el.innerHTML = '';
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:32px;color:rgba(30,64,175,.3);font-weight:600">Khong co mon</div>';
+    return;
+  }
+  list.forEach(function(item) {
+    var div = document.createElement('div');
+    div.className = 'mb-mitem';
+    div.innerHTML =
+      '<div class="mb-mitem-icon">' + (item.emoji||'🍽️') + '</div>' +
+      '<div class="mb-mitem-info">' +
+        '<div class="mb-mitem-name">' + item.name + '</div>' +
+        '<div class="mb-mitem-price">' + fmt(item.price) + '</div>' +
+      '</div>' +
+      '<button class="mb-mitem-add">+</button>';
+    div.querySelector('.mb-mitem-add').onclick = function(e) {
+      e.stopPropagation();
+      if (!S.curTable) { showAlert('Vui long chon ban truoc!'); return; }
+      addItem(item.name, item.price);
+      mbRenderBill();
+      mbUpdateBadge();
+      // Hieu ung nhay
+      var btn = e.target;
+      btn.style.transform = 'scale(1.4)';
+      setTimeout(function(){ btn.style.transform = ''; }, 200);
+    };
+    el.appendChild(div);
+  });
+}
+
+// ── Render bill cho mobile ──
+function mbRenderBill() {
+  var table = S.curTable;
+
+  // Ten ban
+  var tbl = document.getElementById('mb-bill-table');
+  if (tbl) tbl.textContent = table ? 'Don hang: ' + table.toUpperCase() : 'Chua chon ban';
+
+  // Tabs don
+  var tabsEl = document.getElementById('mb-bill-tabs');
+  if (tabsEl && table) {
+    var tabs = (S.tabList[table]||[]).filter(function(id){
+      return (S.store[table]||{})[id] !== undefined;
+    });
+    var act = S.activeTab[table];
+    tabsEl.innerHTML = '';
+    tabs.forEach(function(tid) {
+      var btn = document.createElement('button');
+      btn.className = 'mb-otab' + (tid===act?' on':'');
+      btn.textContent = tid;
+      btn.onclick = function() {
+        S.activeTab[table] = tid;
+        tabsEl.querySelectorAll('.mb-otab').forEach(function(b){b.classList.remove('on');});
+        btn.classList.add('on');
+        mbRenderBillItems();
+      };
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  mbRenderBillItems();
+}
+
+function mbRenderBillItems() {
+  var body  = document.getElementById('mb-billbody');
+  var empty = document.getElementById('mb-bill-empty');
+  var totEl = document.getElementById('mb-total-val');
+  if (!body) return;
+
+  var table = S.curTable;
+  var tab   = table && S.activeTab[table];
+  var items = (tab && S.store[table] && S.store[table][tab]) || [];
+
+  // Remove old items (keep empty div)
+  body.querySelectorAll('.mb-bitem').forEach(function(e){ e.remove(); });
+
+  if (!items.length) {
+    if (empty) empty.style.display = 'flex';
+    if (totEl) totEl.textContent = '0d';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  var total = 0;
+  items.forEach(function(item) {
+    var qty  = item.quantity || 1;
+    var sub  = item.price * qty;
+    total   += sub;
+    var div  = document.createElement('div');
+    div.className = 'mb-bitem';
+    div.innerHTML =
+      '<div class="mb-bitem-name">' + item.name + '</div>' +
+      '<div class="mb-bitem-qty">' +
+        '<button class="mb-qty-btn" data-name="'+item.name+'" data-act="minus">&#x2212;</button>' +
+        '<span class="mb-bitem-n">'+qty+'</span>' +
+        '<button class="mb-qty-btn" data-name="'+item.name+'" data-act="plus">+</button>' +
+      '</div>' +
+      '<div class="mb-bitem-price">'+fmt(sub)+'</div>';
+    body.insertBefore(div, empty);
+    div.querySelectorAll('.mb-qty-btn').forEach(function(btn){
+      btn.onclick = function() {
+        var act2 = btn.dataset.act;
+        if (act2 === 'plus')  addItem(item.name, item.price);
+        if (act2 === 'minus') removeItem(item.name);
+        mbRenderBill();
+        mbUpdateBadge();
+      };
+    });
   });
 
-  mbApply();
+  if (totEl) totEl.textContent = fmt(total);
+}
+
+// ── Navigation ──
+function mbGoTo(panel) {
+  if (!isMobile()) return;
+  _mbPanel = panel;
+
+  // Nav buttons
+  document.querySelectorAll('.mb-btn').forEach(function(b){
+    b.classList.toggle('active', b.id === 'mbn-'+panel);
+  });
+
+  // Pages
+  document.querySelectorAll('.mb-page').forEach(function(p){
+    p.classList.remove('active');
+  });
+  var pageMap = {tables:'mb-p-tables', menu:'mb-p-menu', bill:'mb-p-bill'};
+  var pg = document.getElementById(pageMap[panel]);
+  if (pg) pg.classList.add('active');
+
+  // Render tuong ung
+  if (panel === 'tables') mbRenderTables();
+  if (panel === 'menu')   mbRenderMenu();
+  if (panel === 'bill')   mbRenderBill();
 }
 
 function mbUpdateBadge() {
@@ -4651,75 +5170,88 @@ function mbUpdateBadge() {
   var tab   = table && S.activeTab[table];
   var items = (tab && S.store[table] && S.store[table][tab]) || [];
   var count = items.reduce(function(s,i){ return s+(i.quantity||1); }, 0);
-  badge.textContent = count > 0 ? count : '';
-  badge.classList.toggle('show', count > 0);
+  badge.textContent = count||'';
+  badge.classList.toggle('show', count>0);
 }
 
-// Swipe de chuyen trang
-(function(){
-  var tx=0, ty=0, locked=false;
-  var order = ['tables','menu','bill'];
-
-  document.addEventListener('touchstart', function(e){
-    if (!isMobile()) return;
-    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
-    tx = e.touches[0].clientX;
-    ty = e.touches[0].clientY;
-    locked = false;
-  }, {passive:true});
-
-  document.addEventListener('touchmove', function(e){
-    if (!isMobile() || locked) return;
-    if (Math.abs(e.touches[0].clientY - ty) > Math.abs(e.touches[0].clientX - tx) + 8)
-      locked = true;
-  }, {passive:true});
-
-  document.addEventListener('touchend', function(e){
-    if (!isMobile() || locked) return;
-    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
-    var dx = e.changedTouches[0].clientX - tx;
-    var dy = e.changedTouches[0].clientY - ty;
-    if (Math.abs(dx) < 55 || Math.abs(dy) > Math.abs(dx)) return;
-    var idx = order.indexOf(_mbPanel);
-    if (dx < 0 && idx < order.length-1) mbGoTo(order[idx+1]);
-    if (dx > 0 && idx > 0)              mbGoTo(order[idx-1]);
-  }, {passive:true});
-})();
-
-// Chon ban -> tu dong sang menu
+function mbToggleMenu() {
+  var pop = document.getElementById('mb-menu-popup');
+  if (pop) pop.classList.toggle('open');
+}
 document.addEventListener('click', function(e){
-  if (!isMobile()) return;
-  if (!e.target.closest('.tcard')) return;
-  setTimeout(function(){ if (S.curTable) mbGoTo('menu'); }, 60);
+  if (!e.target.closest('#mb-user-btn') && !e.target.closest('#mb-menu-popup')) {
+    var pop = document.getElementById('mb-menu-popup');
+    if (pop) pop.classList.remove('open');
+  }
 });
 
-// Patch showView va rBill (dung bien, tranh hoisting loop)
+// ── Patch showView cho mobile ──
 var _origShowView = showView;
 showView = function(v) {
   _origShowView(v);
   if (!isMobile()) return;
   var nav = document.getElementById('mb-nav');
-  if (nav) nav.style.display = v === 'hist' ? 'none' : 'flex';
-  if (v === 'pos') mbApply();
+  var app = document.getElementById('mb-app');
+  if (v === 'hist') {
+    if (nav) nav.style.display = 'none';
+    if (app) app.style.display = 'none';
+  } else {
+    if (nav) nav.style.display = 'flex';
+    if (app) app.style.display = 'flex';
+    mbGoTo(_mbPanel);
+  }
 };
 
+// ── Patch rBill ──
 var _origRBill = rBill;
 rBill = function() {
   _origRBill.apply(this, arguments);
-  mbUpdateBadge();
+  if (isMobile()) { mbRenderBill(); mbUpdateBadge(); }
 };
 
-// Resize
+// ── Patch rTables ──
+var _origRTables = rTables;
+rTables = function() {
+  _origRTables.apply(this, arguments);
+  if (isMobile()) mbRenderTables();
+};
+
+// ── Swipe ──
+(function(){
+  var tx=0, ty=0, locked=false;
+  var order=['tables','menu','bill'];
+  document.addEventListener('touchstart',function(e){
+    if (!isMobile()) return;
+    if (e.target.closest('#mb-nav,#mb-header,#mb-menu-popup,.mbg,.hdp-drop,.hsel-drop')) return;
+    tx=e.touches[0].clientX; ty=e.touches[0].clientY; locked=false;
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if (!isMobile()||locked) return;
+    if (Math.abs(e.touches[0].clientY-ty)>Math.abs(e.touches[0].clientX-tx)+10) locked=true;
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if (!isMobile()||locked) return;
+    if (e.target.closest('#mb-nav,#mb-header,#mb-menu-popup,.mbg,.hdp-drop,.hsel-drop')) return;
+    var dx=e.changedTouches[0].clientX-tx;
+    var dy=e.changedTouches[0].clientY-ty;
+    if (Math.abs(dx)<55||Math.abs(dy)>Math.abs(dx)) return;
+    var idx=order.indexOf(_mbPanel);
+    if (dx<0&&idx<order.length-1) mbGoTo(order[idx+1]);
+    if (dx>0&&idx>0)              mbGoTo(order[idx-1]);
+  },{passive:true});
+})();
+
+// ── Resize ──
 window.addEventListener('resize', function(){
-  mbApply();
-  // Hien/an nav
-  var nav = document.getElementById('mb-nav');
-  if (nav && isMobile()) nav.style.display = 'flex';
-  if (nav && !isMobile()) nav.style.display = '';
+  if (isMobile()) {
+    mbGoTo(_mbPanel);
+  }
 });
 
-// Khoi dong: ap dung ngay
-setTimeout(function(){ mbApply(); }, 100);
+// ── Init ──
+setTimeout(function(){
+  if (isMobile()) mbGoTo('tables');
+}, 150);
 
 """
 
@@ -4952,15 +5484,67 @@ def build_page():
         '</div>',
         '<div id="mc"></div>',
         '<div id="hpop-portal"></div>',
-        """<div id="mb-nav">
+        """<div id="mb-app">
+  <!-- Header -->
+  <div id="mb-header">
+    <div id="mb-brand">&#x1F680; POS B&#xE1;n h&#xE0;ng</div>
+    <button id="mb-user-btn" onclick="mbToggleMenu()">&#x2630;</button>
+  </div>
+  <!-- User menu popup -->
+  <div id="mb-menu-popup">
+    <button class="mb-menu-item" onclick="mbToggleMenu();showSettings()">&#x2699;&#xFE0F; C&#xE0;i &#x111;&#x1EB7;t</button>
+    <button class="mb-menu-item" onclick="mbToggleMenu();mTables()">&#x1FA51; Qu&#x1EA3;n l&#xFD; B&#xE0;n</button>
+    <button class="mb-menu-item" onclick="mbToggleMenu();mMenu()">&#x1F354; Qu&#x1EA3;n l&#xFD; Th&#x1EF1;c &#x110;&#x1EB7;n</button>
+    <button class="mb-menu-item" onclick="mbToggleMenu();showView('hist')">&#x1F9FE; L&#x1ECB;ch s&#x1EED; B&#xE1;n h&#xE0;ng</button>
+    <div class="mb-menu-sep"></div>
+    <button class="mb-menu-item" onclick="mbToggleMenu();doLogout()" style="color:#ef4444">&#x1F6AA; &#x110;&#x103;ng xu&#x1EA5;t</button>
+  </div>
+  <!-- Pages -->
+  <div id="mb-pages">
+    <!-- Trang 1: Chon ban -->
+    <div class="mb-page active" id="mb-p-tables">
+      <div class="mb-pg-title">Ch&#x1ECD;n b&#xE0;n</div>
+      <div id="mb-tgrid"></div>
+    </div>
+    <!-- Trang 2: Thuc don -->
+    <div class="mb-page" id="mb-p-menu">
+      <div id="mb-menu-header">
+        <div id="mb-table-chip">&#x1F4CD; Ch&#x1B0;a ch&#x1ECD;n b&#xE0;n</div>
+        <div id="mb-catbar"></div>
+      </div>
+      <div id="mb-mitems"></div>
+    </div>
+    <!-- Trang 3: Don hang -->
+    <div class="mb-page" id="mb-p-bill">
+      <div id="mb-bill-header">
+        <div id="mb-bill-table">Ch&#x1B0;a ch&#x1ECD;n b&#xE0;n</div>
+        <div id="mb-bill-tabs"></div>
+      </div>
+      <div id="mb-billbody">
+        <div id="mb-bill-empty">
+          <div class="ico">&#x1F6D2;</div>
+          <p>Ch&#x1B0;a c&#xF3; m&#xF3;n n&#xE0;o</p>
+        </div>
+      </div>
+      <div id="mb-bill-footer">
+        <div id="mb-total">
+          <span id="mb-total-label">T&#x1ED5;ng ti&#x1EC1;n</span>
+          <span id="mb-total-val">0&#x111;</span>
+        </div>
+        <button id="mb-checkout-btn" onclick="doCheckout()">&#x2705; THANH TO&#xC1;N</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="mb-nav">
   <button class="mb-btn active" id="mbn-tables" onclick="mbGoTo('tables')">
-    <span class="mb-ico">&#x1F37D;</span>Chon ban
+    <span class="mb-ico">&#x1F37D;&#xFE0F;</span>B&#xE0;n
   </button>
   <button class="mb-btn" id="mbn-menu" onclick="mbGoTo('menu')">
-    <span class="mb-ico">&#x2615;</span>Thuc don
+    <span class="mb-ico">&#x2615;</span>Th&#x1EF1;c &#x111;&#x1EB7;n
   </button>
   <button class="mb-btn" id="mbn-bill" onclick="mbGoTo('bill')">
-    <span class="mb-ico">&#x1F6D2;</span>Don hang
+    <span class="mb-ico">&#x1F6D2;</span>&#x110;&#x1EB7;t m&#xF3;n
     <span class="mb-badge" id="mb-badge"></span>
   </button>
 </div>""",
