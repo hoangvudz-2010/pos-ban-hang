@@ -3030,33 +3030,9 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
   .hist-bar::-webkit-scrollbar { display: none; }
   .hrev-badge { display: none; }
 
-  /* --- TẮT ANIMATION NẶNG TRÊN MOBILE --- */
-  /* Tat tat ca animation khong can thiet */
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.15s !important;
-  }
-  /* Ngoai tru cac animation can thiet */
-  #ldrb, .nb-tab::after, .mb-btn::before {
-    animation-duration: revert !important;
-    animation-iteration-count: revert !important;
-  }
-  /* Giam backdrop-filter xuong muc toi thieu */
-  * {
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-  }
-  /* Cac phan khong can blur thi tat han */
-  .holi, .holi-grp-hdr, .bitem, .tcard {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-  /* Tat grain animation */
+  /* Tat hieu ung nang tren mobile (chi nhung thu thuc su can thiet) */
   .grain { display: none; }
-  /* Tat prism animation tren topbar */
   #topbar::before { animation: none !important; }
-  /* Tat causticsShift */
   .ddlist::before { animation: none !important; filter: none !important; }
 
   /* ══ AN desktop UI, HIEN mobile UI ══ */
