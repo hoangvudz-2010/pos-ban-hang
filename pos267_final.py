@@ -93,7 +93,7 @@ def drive_read(name):
         from googleapiclient.http import MediaIoBaseDownload
         import io
         buf = io.BytesIO()
-        dl = MediaIoBaseDownload(buf, svc.files().get_media(fileId=fid))
+        dl = MediaIoBaseDownload(buf, svc.files().get_media(fileId=fid, supportsAllDrives=True))
         done = False
         while not done: _, done = dl.next_chunk()
         data = json.loads(buf.getvalue().decode("utf-8"))
@@ -113,15 +113,19 @@ def drive_write(name, data):
         content = json.dumps(data, ensure_ascii=False, separators=(',',':')).encode("utf-8")
         media = MediaIoBaseUpload(io.BytesIO(content), mimetype="application/json")
         fid = drive_find_file(name)
-        if fid:
-            svc.files().update(fileId=fid, media_body=media).execute()
-        else:
-            svc.files().create(body={"name": name, "parents": [GDRIVE_FOLDER_ID]},
-                               media_body=media).execute()
+        if not fid:
+            print(f"[Drive] File {name} chua co trong folder. Hay tao thu cong truoc.")
+            return False
+        # Chi UPDATE - file phai duoc tao boi chinh chu Drive (khong bi loi quota)
+        svc.files().update(
+            fileId=fid,
+            media_body=media,
+            supportsAllDrives=True
+        ).execute()
         _cache[name] = data; _cache_time[name] = time.time()
         return True
     except Exception as e:
-        print(f"[Drive] Lỗi ghi {name}: {e}")
+        print(f"[Drive] Loi ghi {name}: {e}")
         return False
 
 def _use_drive():
@@ -4995,18 +4999,15 @@ def api_test_write():
         media = MediaIoBaseUpload(io.BytesIO(test_data), mimetype="application/json")
         result = svc.files().create(
             body={"name": "test_write.json", "parents": [GDRIVE_FOLDER_ID]},
-            media_body=media,
-            fields="id,name"
+            media_body=media, supportsAllDrives=True, fields="id,name"
         ).execute()
-        # Xoa file test ngay
-        svc.files().delete(fileId=result["id"]).execute()
+        svc.files().delete(fileId=result["id"], supportsAllDrives=True).execute()
         return jsonify({"ok": True, "message": "Ghi va xoa file test thanh cong!"})
     except Exception as e:
         return jsonify({"error": str(e), "type": type(e).__name__})
 
 @flask_app.route("/api/health")
 def api_health():
-    """Endpoint kiem tra trang thai Drive - dung de debug"""
     status = {
         "drive_configured": _use_drive(),
         "gdrive_credentials_set": bool(GDRIVE_CREDENTIALS),
@@ -5017,12 +5018,20 @@ def api_health():
             svc = get_drive()
             status["drive_connected"] = svc is not None
             if svc:
-                # Thu doc danh sach file trong folder
                 q = f"'{GDRIVE_FOLDER_ID}' in parents and trashed=false"
-                res = svc.files().list(q=q, fields="files(name)").execute()
+                res = svc.files().list(
+                    q=q, fields="files(id,name)",
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True
+                ).execute()
                 files = [f["name"] for f in res.get("files", [])]
                 status["drive_files"] = files
-                status["users_file_exists"] = "users.json" in files
+                required = ["users.json", "pos_data.json", "settings.json"]
+                missing = [f for f in required if f not in files]
+                status["missing_files"] = missing
+                status["ready"] = len(missing) == 0
+                if missing:
+                    status["can_lam"] = f"Upload thu cong cac file nay vao thu muc Drive: {missing}"
         except Exception as e:
             status["drive_error"] = str(e)
     return jsonify(status)
