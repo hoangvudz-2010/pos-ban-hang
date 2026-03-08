@@ -4693,22 +4693,21 @@ document.addEventListener('click', function(e){
   setTimeout(function(){ if (S.curTable) mbGoTo('menu'); }, 60);
 });
 
-// Patch showView: an/hien nav khi vao lich su
+// Patch showView va rBill (dung bien, tranh hoisting loop)
 var _origShowView = showView;
-function showView(v) {
+showView = function(v) {
   _origShowView(v);
   if (!isMobile()) return;
   var nav = document.getElementById('mb-nav');
   if (nav) nav.style.display = v === 'hist' ? 'none' : 'flex';
   if (v === 'pos') mbApply();
-}
+};
 
-// Patch rBill: cap nhat badge
 var _origRBill = rBill;
-function rBill() {
+rBill = function() {
   _origRBill.apply(this, arguments);
   mbUpdateBadge();
-}
+};
 
 // Resize
 window.addEventListener('resize', function(){
