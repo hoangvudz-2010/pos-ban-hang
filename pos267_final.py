@@ -467,17 +467,17 @@ input, select, textarea { font-family: inherit; font-stretch: inherit }
 .ddlist {
   position: absolute; top: calc(100% + 14px); right: 0;
   background: linear-gradient(145deg,
-    rgba(240,250,255,.82) 0%,
-    rgba(225,242,255,.78) 50%,
-    rgba(235,248,255,.82) 100%);
-  backdrop-filter: blur(56px) saturate(220%) brightness(1.10);
-  -webkit-backdrop-filter: blur(56px) saturate(220%) brightness(1.10);
+    rgba(230,244,255,.97) 0%,
+    rgba(218,238,255,.96) 50%,
+    rgba(225,242,255,.97) 100%);
+  backdrop-filter: blur(40px) saturate(180%) brightness(1.08);
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.08);
   border-radius: 18px;
-  box-shadow: var(--sh3), var(--inner-hi),
-    0 0 0 .5px rgba(255,255,255,.55),
-    inset 0 0 40px rgba(180,215,255,.12);
-  min-width: 258px; padding: 10px; z-index: 999; display: none;
-  border: 1px solid rgba(200,225,255,.60);
+  box-shadow: 0 8px 40px rgba(30,60,140,.18), 0 2px 8px rgba(30,60,140,.10),
+    0 0 0 1px rgba(180,210,255,.70),
+    inset 0 1.5px 0 rgba(255,255,255,.95);
+  min-width: 258px; padding: 10px; z-index: 9999; display: none;
+  border: 1px solid rgba(150,195,255,.55);
   overflow: hidden;
 }
 /* Caustic water light inside dropdown */
@@ -510,12 +510,13 @@ input, select, textarea { font-family: inherit; font-stretch: inherit }
 .ddi {
   display: flex; align-items: center; gap: 11px;
   padding: 12px 14px; border: none;
-  background: none; width: 100%; text-align: left;
-  font-size: 13px; font-weight: 600; color: var(--mu);
+  background: rgba(255,255,255,.45); width: 100%; text-align: left;
+  font-size: 13px; font-weight: 600; color: rgba(30,50,120,.85);
   border-radius: var(--r-sm); cursor: pointer;
   transition: all .22s var(--spring);
   border: 1px solid transparent;
   position: relative; z-index: 1; overflow: hidden;
+  margin-bottom: 2px;
 }
 /* Left water-streak accent */
 .ddi::before {
@@ -2882,118 +2883,171 @@ input[type=range].go-slider::-moz-range-thumb{width:22px;height:22px;border-radi
 .go-preset-btn.active{background:rgba(47,122,255,.20);color:var(--p);border-color:rgba(47,122,255,.45);box-shadow:var(--glow-p),inset 0 1px 0 rgba(255,255,255,.70)}
 
 /* ================================================================
-   MOBILE RESPONSIVE (max-width: 768px)
-   Desktop layout khong thay doi gi ca
+   MOBILE: portrait (chieu ngang <= chieu doc)
+   Desktop landscape: khong thay doi gi
    ================================================================ */
 #mb-nav { display: none; }
 
-@media (max-width: 768px) {
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
 
-  /* Topbar */
+  /* --- Topbar --- */
   #topbar { height: 50px; padding: 0 12px; gap: 8px; }
   .brand { font-size: 13px !important; }
   .ttime { font-size: 10px !important; letter-spacing: 0 !important; }
 
-  /* Main: 2 panel ngang, slide bang transform */
-  #main { padding: 0; gap: 0; overflow: hidden; position: relative; }
+  /* --- Dropdown ☰ duc hon tren mobile --- */
+  .ddlist {
+    background: rgba(235,246,255,.98) !important;
+    box-shadow: 0 8px 32px rgba(20,50,140,.22), 0 0 0 1px rgba(120,180,255,.6) !important;
+  }
 
+  /* --- Layout chinh: moi view chiem full man hinh --- */
+  #main {
+    padding: 0; gap: 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* pos-page: container truot ngang chua 2 panel */
   #pos-page {
     display: flex !important;
     flex-direction: row;
-    width: 200%;
+    /* 3 "trang": ban, menu, bill — moi trang 100vw */
+    width: 300%;
     height: 100%;
-    transition: transform .30s cubic-bezier(.4,0,.2,1);
+    transition: transform .32s cubic-bezier(.4,0,.2,1);
     will-change: transform;
   }
-  #pos-page.mb-show-bill { transform: translateX(-50%); }
+  /* Slides: mac dinh = trang 1 (ban), -33.33% = menu, -66.67% = bill */
+  #pos-page.mb-show-menu  { transform: translateX(-33.333%); }
+  #pos-page.mb-show-bill  { transform: translateX(-66.667%); }
 
+  /* NB chia doi: ban chiem 1/3, menu chiem 1/3 → moi cai 50% cua nb */
   #nb {
-    flex: 0 0 50%;
+    flex: 0 0 66.667%; /* 2 trang trong 3 */
     min-width: 0;
     height: 100%;
     overflow: hidden;
     display: flex;
     flex-direction: column;
   }
-
-  #bill-panel {
+  /* Noi dung nb (tab-tables + tab-menu) truot doc lap */
+  .nb-content {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    flex: 1;
+  }
+  #tab-tables {
     flex: 0 0 50%;
     min-width: 0;
     height: 100%;
+    overflow-y: auto;
+    display: flex !important;
+    flex-direction: column;
+  }
+  #tab-tables.hide { display: flex !important; } /* luon hien, truot bang nb */
+  #tab-menu {
+    flex: 0 0 50%;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    display: flex !important;
+    flex-direction: column;
+  }
+  #tab-menu.show, #tab-menu { display: flex !important; }
+
+  /* Bill panel: 1/3 cua pos-page = 100vw */
+  #bill-panel {
+    flex: 0 0 33.333%;
+    min-width: 0;
+    height: 100%;
     border-radius: 0;
-    border-top: none;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* Bottom nav bar */
+  /* Hist page: an khi o pos mode, full screen khi mo */
+  #hist-page {
+    position: absolute !important;
+    inset: 0;
+    z-index: 200;
+    display: none !important;
+    flex-direction: column;
+  }
+  #hist-page.show {
+    display: flex !important;
+  }
+
+  /* --- Bottom nav bar --- */
   #mb-nav {
     display: flex;
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    height: 58px;
+    height: 60px;
     z-index: 500;
-    background: rgba(200,225,255,calc(var(--water-fill,0.06)*2));
-    backdrop-filter: blur(var(--water-blur,18px)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--water-blur,18px)) saturate(160%);
-    border-top: 1px solid rgba(255,255,255,.65);
-    box-shadow: 0 -4px 20px rgba(30,80,200,.10), inset 0 1px 0 rgba(255,255,255,.80);
+    background: rgba(220,236,255,.97);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-top: 1px solid rgba(150,200,255,.5);
+    box-shadow: 0 -4px 20px rgba(30,80,200,.12), inset 0 1px 0 rgba(255,255,255,.9);
   }
   .mb-btn {
     flex: 1;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 2px;
+    gap: 3px;
     background: none; border: none; cursor: pointer;
-    font-size: 10px; font-weight: 700;
-    color: rgba(60,100,180,.55);
-    letter-spacing: .4px; text-transform: uppercase;
+    font-size: 9px; font-weight: 700;
+    color: rgba(60,100,180,.45);
+    letter-spacing: .3px; text-transform: uppercase;
     position: relative;
     transition: color .2s;
+    padding: 0;
   }
-  .mb-btn .mb-ico { font-size: 19px; line-height: 1; transition: transform .2s; }
+  .mb-btn .mb-ico { font-size: 20px; line-height: 1; transition: transform .2s; }
   .mb-btn.active { color: var(--p); }
   .mb-btn.active .mb-ico { transform: translateY(-2px); }
   .mb-btn::before {
     content: '';
-    position: absolute; top: 0; left: 25%; right: 25%;
+    position: absolute; top: 0; left: 20%; right: 20%;
     height: 2.5px; border-radius: 0 0 3px 3px;
     background: var(--p); opacity: 0;
     transition: opacity .2s;
   }
   .mb-btn.active::before { opacity: 1; }
 
-  /* Badge so mon tren nut bill */
+  /* Badge so mon */
   .mb-badge {
     display: none;
-    position: absolute; top: 6px; right: calc(50% - 20px);
-    background: var(--d); color: #fff;
+    position: absolute; top: 5px; right: calc(50% - 22px);
+    background: #ef4444; color: #fff;
     font-size: 9px; font-weight: 800;
-    min-width: 15px; height: 15px;
+    min-width: 16px; height: 16px;
     border-radius: 99px; padding: 0 3px;
     align-items: center; justify-content: center;
-    border: 1.5px solid rgba(255,255,255,.9);
-    box-shadow: 0 1px 4px rgba(220,50,50,.35);
+    border: 2px solid rgba(235,246,255,.97);
+    box-shadow: 0 1px 4px rgba(200,40,40,.3);
   }
   .mb-badge.show { display: flex; }
 
-  /* Padding bottom tranh bi nav che */
-  .nb-content { overflow: hidden; }
-  #tab-tables .table-area { padding-bottom: 72px; }
-  #tab-menu .menu-items { padding-bottom: 72px; }
-  .bill-body { padding-bottom: 4px; }
-  .bill-btns { margin-bottom: 62px; }
+  /* Padding bottom tranh nav che noi dung */
+  #tab-tables .table-area { padding-bottom: 70px; }
+  #tab-menu .menu-items   { padding-bottom: 70px; }
+  .bill-body              { padding-bottom: 2px; }
+  .bill-btns              { padding-bottom: 68px; }
 
-  /* Tab nho hon */
-  .nb-tab { padding: 11px 8px; font-size: 10px; }
+  /* NB tabs nho hon (2 tab cho 2/3 width) */
+  .nb-tabs { border-radius: 0; border-left: none; border-right: none; border-top: none; }
+  .nb-tab  { padding: 10px 6px; font-size: 10px; }
 
-  /* Lich su: stack doc */
-  .hist-body { flex-direction: column; }
-  .hist-left { border-right: none; border-bottom: 1px solid var(--edge-lo); max-height: 52vh; overflow-y: auto; }
+  /* Lich su doc */
+  .hist-body  { flex-direction: column; }
+  .hist-left  { border-right: none; border-bottom: 1px solid var(--edge-lo); max-height: 50vh; }
   .hist-right { flex: 1; min-height: 180px; }
 
-  /* Stat cards: 2 cot */
+  /* Stat cards 2 cot */
   .scs { grid-template-columns: repeat(2,1fr) !important; }
 
   /* Filter bar cuon ngang */
@@ -4592,30 +4646,31 @@ _dsObs.observe(document.body, { childList: true, subtree: true });
 // ============================================================
 var _mbPanel = 'tables'; // 'tables' | 'menu' | 'bill'
 
-function isMobile() { return window.innerWidth <= 768; }
+function isMobile() {
+  return window.innerWidth < window.innerHeight;
+}
 
-function mbGoTo(panel, noNbSwitch) {
+function mbApplySlide() {
+  var pos = document.getElementById('pos-page');
+  if (!pos) return;
+  pos.classList.remove('mb-show-menu','mb-show-bill');
+  if (_mbPanel === 'menu')  pos.classList.add('mb-show-menu');
+  if (_mbPanel === 'bill')  pos.classList.add('mb-show-bill');
+}
+
+function mbGoTo(panel) {
   if (!isMobile()) return;
   _mbPanel = panel;
 
-  // Highlight active nav button
+  // Nav buttons
   ['tables','menu','bill'].forEach(function(p) {
     var b = document.getElementById('mbn-' + p);
     if (b) b.classList.toggle('active', p === panel);
   });
 
-  var pos = document.getElementById('pos-page');
-  if (!pos) return;
-
-  if (panel === 'bill') {
-    pos.classList.add('mb-show-bill');
-  } else {
-    pos.classList.remove('mb-show-bill');
-    if (!noNbSwitch) showNbTab(panel === 'menu' ? 'menu' : 'tables');
-  }
+  mbApplySlide();
 }
 
-// Cap nhat badge so luong mon tren nut bill
 function mbUpdateBadge() {
   var badge = document.getElementById('mb-badge');
   if (!badge) return;
@@ -4627,65 +4682,77 @@ function mbUpdateBadge() {
   badge.classList.toggle('show', count > 0);
 }
 
-// Vuot chuyen man hinh
+// Swipe de chuyen trang
 (function() {
-  var tx = 0, ty = 0, _swipeLocked = false;
+  var tx = 0, ty = 0, locked = false;
 
   document.addEventListener('touchstart', function(e) {
     if (!isMobile()) return;
-    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
+    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop,#hist-page')) return;
     tx = e.touches[0].clientX;
     ty = e.touches[0].clientY;
-    _swipeLocked = false;
+    locked = false;
   }, { passive: true });
 
   document.addEventListener('touchmove', function(e) {
-    if (!isMobile() || _swipeLocked) return;
-    var dx = e.touches[0].clientX - tx;
-    var dy = e.touches[0].clientY - ty;
-    // Neu vuot doc hon ngang thi khoa lai, khong lam gi
-    if (Math.abs(dy) > Math.abs(dx) + 10) { _swipeLocked = true; }
+    if (!isMobile() || locked) return;
+    var dy = Math.abs(e.touches[0].clientY - ty);
+    var dx = Math.abs(e.touches[0].clientX - tx);
+    if (dy > dx + 8) locked = true;
   }, { passive: true });
 
   document.addEventListener('touchend', function(e) {
-    if (!isMobile() || _swipeLocked) return;
-    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop')) return;
+    if (!isMobile() || locked) return;
+    if (e.target.closest('#mb-nav,#topbar,.mbg,.hdp-drop,.hsel-drop,#hist-page')) return;
     var dx = e.changedTouches[0].clientX - tx;
     var dy = e.changedTouches[0].clientY - ty;
     if (Math.abs(dx) < 55 || Math.abs(dy) > Math.abs(dx)) return;
 
-    if (_mbPanel === 'tables') {
-      if (dx < 0) mbGoTo('menu');
-    } else if (_mbPanel === 'menu') {
-      if (dx > 0) mbGoTo('tables');
-      else mbGoTo('bill');
-    } else if (_mbPanel === 'bill') {
-      if (dx > 0) mbGoTo('menu');
-    }
+    var order = ['tables','menu','bill'];
+    var idx = order.indexOf(_mbPanel);
+    if (dx < 0 && idx < order.length - 1) mbGoTo(order[idx + 1]);
+    if (dx > 0 && idx > 0)               mbGoTo(order[idx - 1]);
   }, { passive: true });
 })();
 
-// Khi chon ban tren mobile -> tu dong sang menu
+// Chon ban -> sang menu
 document.addEventListener('click', function(e) {
   if (!isMobile()) return;
   if (!e.target.closest('.tcard')) return;
   setTimeout(function() {
-    if (S.curTable) mbGoTo('menu', false);
+    if (S.curTable) mbGoTo('menu');
   }, 60);
 });
 
-// Patch rBill de cap nhat badge
+// Patch showView: khi vao hist tren mobile thi an pos, nguoc lai hien lai
+var _origShowView = showView;
+function showView(v) {
+  _origShowView(v);
+  if (isMobile()) {
+    var nav = document.getElementById('mb-nav');
+    if (nav) nav.style.display = v === 'hist' ? 'none' : 'flex';
+    // Khi quay ve pos tu hist
+    if (v === 'pos') mbApplySlide();
+  }
+}
+
+// Patch rBill: cap nhat badge
 var _origRBill = rBill;
 function rBill() {
   _origRBill.apply(this, arguments);
   mbUpdateBadge();
 }
 
-// Reset khi resize ve desktop
+// Resize: doi che do
 window.addEventListener('resize', function() {
   if (!isMobile()) {
     var pos = document.getElementById('pos-page');
-    if (pos) pos.classList.remove('mb-show-bill');
+    if (pos) { pos.classList.remove('mb-show-menu','mb-show-bill'); }
+    var nav = document.getElementById('mb-nav');
+    if (nav) nav.style.display = '';
+    _mbPanel = 'tables';
+  } else {
+    mbApplySlide();
   }
 });
 
@@ -4973,68 +5040,12 @@ def api_register():
     if not u or not p1: return jsonify({"error":"Vui lòng nhập đầy đủ!"}),400
     if p1!=p2: return jsonify({"error":"Mật khẩu xác nhận không khớp!"}),400
     if u in users: return jsonify({"error":"Tên đăng nhập đã tồn tại!"}),400
-    users[u]={"password":hash_pw(p1)}
-    try:
-        save_users(users)
-    except RuntimeError as e:
-        return jsonify({"error":f"Lỗi lưu dữ liệu: {e}. Kiểm tra cấu hình Google Drive trên Render."}),500
+    users[u]={"password":hash_pw(p1)}; save_users(users)
     return jsonify({"ok":True})
 
 @flask_app.route("/api/logout",methods=["POST"])
 def api_logout():
     session.clear(); return jsonify({"ok":True})
-
-@flask_app.route("/api/test-write")
-def api_test_write():
-    """Test ghi file len Drive de debug"""
-    if not _use_drive():
-        return jsonify({"error": "Drive chua duoc cau hinh"})
-    try:
-        svc = get_drive()
-        if not svc:
-            return jsonify({"error": "Khong ket noi duoc Drive service"})
-        from googleapiclient.http import MediaIoBaseUpload
-        import io
-        test_data = json.dumps({"test": True}).encode("utf-8")
-        media = MediaIoBaseUpload(io.BytesIO(test_data), mimetype="application/json")
-        result = svc.files().create(
-            body={"name": "test_write.json", "parents": [GDRIVE_FOLDER_ID]},
-            media_body=media, supportsAllDrives=True, fields="id,name"
-        ).execute()
-        svc.files().delete(fileId=result["id"], supportsAllDrives=True).execute()
-        return jsonify({"ok": True, "message": "Ghi va xoa file test thanh cong!"})
-    except Exception as e:
-        return jsonify({"error": str(e), "type": type(e).__name__})
-
-@flask_app.route("/api/health")
-def api_health():
-    status = {
-        "drive_configured": _use_drive(),
-        "gdrive_credentials_set": bool(GDRIVE_CREDENTIALS),
-        "gdrive_folder_id_set": bool(GDRIVE_FOLDER_ID),
-    }
-    if _use_drive():
-        try:
-            svc = get_drive()
-            status["drive_connected"] = svc is not None
-            if svc:
-                q = f"'{GDRIVE_FOLDER_ID}' in parents and trashed=false"
-                res = svc.files().list(
-                    q=q, fields="files(id,name)",
-                    supportsAllDrives=True,
-                    includeItemsFromAllDrives=True
-                ).execute()
-                files = [f["name"] for f in res.get("files", [])]
-                status["drive_files"] = files
-                required = ["users.json", "pos_data.json", "settings.json"]
-                missing = [f for f in required if f not in files]
-                status["missing_files"] = missing
-                status["ready"] = len(missing) == 0
-                if missing:
-                    status["can_lam"] = f"Upload thu cong cac file nay vao thu muc Drive: {missing}"
-        except Exception as e:
-            status["drive_error"] = str(e)
-    return jsonify(status)
 
 @flask_app.route("/api/data")
 @login_required
@@ -5296,5 +5307,4 @@ if __name__ == "__main__":
     if debug:
         import webbrowser
         threading.Timer(1.3, lambda: webbrowser.open(f"http://127.0.0.1:{port}")).start()
-    print(f"  POS BAN HANG dang chay tai http://0.0.0.0:{port}")
     flask_app.run(debug=debug, host="0.0.0.0", port=port)
